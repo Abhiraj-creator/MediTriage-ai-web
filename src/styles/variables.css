@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1A1AFF;
+  --color-surface: #FCF9F1;
+  --color-surface-container: #E8E6DE;
+  --color-on-primary: #FFFFFF;
+
+  --shadow-brutal: 4px 4px 0px #1A1AFF;
+
+  --font-sans: "Inter", sans-serif;
+  --font-mono-technical: "Space Grotesk", monospace;
+}
+
+@layer base {
+  :root {
+    /* Keep these raw for manual CSS usage if needed, though Tailwind utilities will cover most */
+    --risk-high: #D92D20;
+    --risk-high-bg: rgba(217, 45, 32, 0.1);
+    --risk-medium: #F79009;
+    --risk-medium-bg: rgba(247, 144, 9, 0.1);
+    --risk-low: #12B76A;
+    --risk-low-bg: rgba(18, 183, 106, 0.1);
+  }
+}
