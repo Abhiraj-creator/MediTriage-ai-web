@@ -3,33 +3,61 @@ import { supabase } from '../../../config/supabase'
 import { TABLES } from '../../../config/constants'
 import { useTriageStore } from '../../../store/triage.store'
 import { triageService } from '../services/triage.service'
-import { useToast } from './useToast' // We will build this next
+import { useToast } from './useToast'
 
 export const useRealtimeCases = () => {
-  const { setCases, addCase, updateCase, setLoading, setError } = useTriageStore()
+  const { setCases, addCase, updateCase, setLoading, setError, setConnectionStatus } = useTriageStore()
   const initialized = useRef(false)
   const { showHighRiskToast } = useToast()
 
+  const fetchInitialCases = async () => {
+    setLoading(true)
+    setError(null)
+    const data = await triageService.getCases()
+    if (data) {
+      setCases(data)
+    } else {
+      setError('Failed to fetch initial cases.')
+    }
+    setLoading(false)
+  }
+
   useEffect(() => {
-    // Only fetch once
+    // Fetch once on mount
     if (!initialized.current) {
       initialized.current = true
       fetchInitialCases()
     }
 
-    // Set up Supabase Realtime Subscription for INSERT and UPDATE
+    // Supabase Realtime: listen on the raw triage_cases table for changes
     const casesSubscription = supabase
       .channel('public:triage_cases')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: TABLES.TRIAGE_CASES },
-        (payload) => {
-          console.log('New case arrived:', payload.new)
-          addCase(payload.new)
-          
-          // Trigger alert if high risk
-          if (payload.new.risk_level === 'HIGH') {
-            showHighRiskToast(payload.new)
+        async (payload) => {
+          console.log('New case arrived (raw):', payload.new)
+
+          // Re-fetch this specific case from the VIEW so we get patient_name etc.
+          try {
+            const { data } = await supabase
+              .from('v_triage_cases')
+              .select('id, patient_name, patient_age, patient_gender, risk_level, ai_confidence, symptoms, status, created_at, ai_summary, ai_recommendation')
+              .eq('id', payload.new.id)
+              .single()
+
+            if (data) {
+              addCase(data)
+              if (data.risk_level === 'HIGH') {
+                showHighRiskToast(data)
+              }
+            } else {
+              // Fallback: add the raw payload (no patient name)
+              addCase(payload.new)
+            }
+          } catch (e) {
+            console.warn('Could not re-fetch new case from view, using raw payload', e)
+            addCase(payload.new)
           }
         }
       )
@@ -41,36 +69,15 @@ export const useRealtimeCases = () => {
           updateCase(payload.new)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Case subscription status:', status)
+        setConnectionStatus(status === 'SUBSCRIBED' ? 'SUBSCRIBED' : 'DISCONNECTED')
+      })
 
-    // Cleanup subscription on unmount
     return () => {
       supabase.removeChannel(casesSubscription)
     }
-  }, []) // Empty dep array so it only runs once per mount
+  }, []) // Empty dep array — run once per mount
 
-  const fetchInitialCases = async () => {
-    setLoading(true)
-    setError(null)
-    
-    // Only attempt fetch if Supabase URL is active
-    if (!import.meta.env.VITE_SUPABASE_URL) {
-      console.log('MOCK MODE: Skipping DB fetch, using loaded MOCK_CASES in component')
-      setLoading(false)
-      return
-    }
-
-    const data = await triageService.getCases()
-    if (data) {
-      setCases(data)
-    } else {
-      setError('Failed to fetch initial cases.')
-    }
-    setLoading(false)
-  }
-
-  // Allow manual refetch if needed
-  return {
-    refetch: fetchInitialCases
-  }
+  return { refetch: fetchInitialCases }
 }

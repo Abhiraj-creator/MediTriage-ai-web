@@ -2,25 +2,37 @@ import { supabase } from '../../../config/supabase'
 import { TABLES } from '../../../config/constants'
 
 export const feedbackService = {
-  async submitFeedback(caseId, doctorId, feedbackText, correctedRiskLevel = null) {
-    try {
-      const payload = {
-        case_id: caseId,
-        doctor_id: doctorId,
-        feedback: feedbackText,
-        corrected_risk_level: correctedRiskLevel,
-        reviewed_at: new Date().toISOString()
-      }
+  async submitFeedback({ caseId, doctorId, rating, feedbackText, riskOverride, doctorNote }) {
+    // 1. Insert feedback
+    const { error: feedbackError } = await supabase
+      .from(TABLES.AI_FEEDBACK)
+      .insert({
+        case_id:       caseId,
+        doctor_id:     doctorId,
+        rating,
+        feedback_text: feedbackText,
+        risk_override: riskOverride || null,
+        doctor_note:   doctorNote,
+      })
 
-      const { data, error } = await supabase
-        .from('ai_feedback')
-        .insert([payload])
+    if (feedbackError) throw feedbackError
 
-      if (error) throw error
-      return { success: true, data }
-    } catch (error) {
-      console.error('Failed to submit feedback:', error)
-      return { success: false, error }
+    // 2. Update case
+    const updatePayload = {
+      verified_by_doctor: true,
+      status:             'reviewed',
+      updated_at:         new Date().toISOString(),
     }
-  }
+
+    if (riskOverride) {
+      updatePayload.risk_level = riskOverride
+    }
+
+    const { error: caseError } = await supabase
+      .from(TABLES.TRIAGE_CASES)
+      .update(updatePayload)
+      .eq('id', caseId)
+
+    if (caseError) throw caseError
+  },
 }

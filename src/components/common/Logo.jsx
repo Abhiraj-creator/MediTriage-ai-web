@@ -1,0 +1,18 @@
+import React from 'react';
+
+export const Logo = ({ className = "w-10 h-10", pathClassName = "fill-current" }) => (
+  <svg viewBox="0 0 421 420" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <rect id="plusV" x="205" width="11" height="420" />
+      <rect id="plusH" x="420.5" y="204.5" width="11" height="420" transform="rotate(90 420.5 204.5)" />
+      <path id="plus" d="M216 204.5H420.5V215.5H216V420H205V215.5H0.5V204.5H205V0H216V204.5Z" />
+      <path id="circle" d="M210.756 34.2979C309.804 34.2979 390.098 114.592 390.098 213.64C390.098 312.688 309.804 392.981 210.756 392.981C111.708 392.981 31.4141 312.687 31.4141 213.64C31.4141 114.592 111.708 34.2979 210.756 34.2979ZM210.75 78.9922C136.385 78.9924 76.1008 139.277 76.1006 213.642C76.1006 288.007 136.385 348.292 210.75 348.292C285.115 348.292 345.4 288.007 345.4 213.642C345.4 139.277 285.115 78.9922 210.75 78.9922Z" transform="matrix(0.8215,0,0,0.8215,37.61996,38.13464)" />
+      <mask id="maskForPlusV" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white" /><use href="#circle" fill="black" /></mask>
+      <mask id="maskForPlusH" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white" /><use href="#circle" fill="black" /></mask>
+      <mask id="maskForCircle" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white" /><use href="#plusV" fill="black" /><use href="#plusH" fill="black" /></mask>
+    </defs>
+    <use href="#plusV" className={pathClassName} mask="url(#maskForPlusV)" />
+    <use href="#plusH" className={pathClassName} mask="url(#maskForPlusH)" />
+    <use href="#circle" className={pathClassName} mask="url(#maskForCircle)" />
+  </svg>
+);

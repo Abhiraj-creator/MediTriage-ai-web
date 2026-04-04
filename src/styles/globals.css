@@ -1,4 +1,5 @@
-@import url('./variables.css');
+@import "tailwindcss";
+@import "./variables.css";
 
 @layer base {
   *, *::before, *::after {
@@ -9,6 +10,7 @@
 
   html {
     scroll-behavior: initial;
+    cursor: auto !important;
   }
 
   body {
@@ -16,24 +18,24 @@
     background-color: var(--color-surface);
     color: var(--color-primary);
     overflow-x: hidden;
-    cursor: none; /* Hide default cursor for GSAP effect */
+    cursor: auto !important;
     -webkit-font-smoothing: antialiased;
   }
 
   button {
     all: unset;
     box-sizing: border-box;
-    cursor: none; /* Inherit none */
+    cursor: pointer;
   }
 
   input, textarea, select {
-    cursor: none;
+    cursor: text;
   }
 
   a {
     text-decoration: none;
     color: inherit;
-    cursor: none;
+    cursor: pointer;
   }
 }
 
@@ -73,28 +75,3 @@
   }
 }
 
-/* Custom Cursor Elements (rendered via React component) */
-#custom-cursor {
-  width: 20px;
-  height: 20px;
-  background-color: var(--color-primary);
-  border-radius: 50%;
-  position: fixed;
-  top: 0; left: 0;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transition: transform 0.1s ease-out, background-color 0.3s ease;
-}
-
-#cursor-follower {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--color-primary);
-  border-radius: 50%;
-  position: fixed;
-  top: -10px; left: -10px;
-  pointer-events: none;
-  z-index: 9998;
-  transition: transform 0.2s ease-out;
-}

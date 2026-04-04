@@ -33,10 +33,16 @@ export const authService = {
       if (error) throw error
 
       if (data?.user?.id) {
-        await supabase.from(TABLES.DOCTOR_PROFILES).insert([{
-          id: data.user.id,
-          ...profileData
-        }])
+        // Upsert into 'profiles' table (the actual table in Supabase)
+        const { error: profileError } = await supabase
+          .from(TABLES.PROFILES)
+          .upsert([{
+            id: data.user.id,
+            email,
+            full_name: profileData?.full_name || profileData?.name || '',
+            role: profileData?.role || 'doctor',
+          }])
+        if (profileError) console.warn('Profile insert error (non-fatal):', profileError)
       }
 
       return { success: true }
@@ -67,27 +73,39 @@ export const authService = {
     useAuthStore.getState().setDoctorProfile(null)
   },
 
+  // Fetches from 'profiles' table — the actual schema in Supabase
   async fetchDoctorProfile(userId) {
     try {
       const { data, error } = await supabase
-        .from(TABLES.DOCTOR_PROFILES)
+        .from(TABLES.PROFILES)
         .select('*')
         .eq('id', userId)
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.warn('No doctor profile found, using fallback/mock.')
-          const mockProfile = { name: "Dr. Admin", role: "Attending", specialization: "Emergency Medicine" }
-          useAuthStore.getState().setDoctorProfile(mockProfile)
+          // No profile row yet — use session email as fallback display name
+          console.warn('No profile found for user, using session fallback.')
+          const { data: sessionData } = await supabase.auth.getSession()
+          const email = sessionData?.session?.user?.email || 'Doctor'
+          const metaName = sessionData?.session?.user?.user_metadata?.name || sessionData?.session?.user?.user_metadata?.full_name
+          const mockName = metaName || email.split('@')[0]
+          useAuthStore.getState().setDoctorProfile({
+            full_name: mockName,
+            role: 'doctor',
+            specialization: sessionData?.session?.user?.user_metadata?.specialization || '',
+            needsOnboarding: true,
+          })
           return
         }
         throw error
       }
-      
+
       useAuthStore.getState().setDoctorProfile(data)
     } catch (error) {
       console.error('Error fetching profile:', error)
+    } finally {
+      useAuthStore.getState().setLoading(false)
     }
   },
 
@@ -107,5 +125,23 @@ export const authService = {
         this.fetchDoctorProfile(session.user.id)
       }
     })
+  },
+
+  async updateProfile(userId, profileData) {
+    try {
+      const { error } = await supabase
+        .from(TABLES.PROFILES)
+        .upsert([{
+          id: userId,
+          ...profileData
+        }])
+      if (error) throw error
+      
+      await this.fetchDoctorProfile(userId)
+      return { success: true }
+    } catch (error) {
+      console.error('Update profile error:', error)
+      return { success: false, error }
+    }
   }
 }

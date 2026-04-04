@@ -1,45 +1,20 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { CheckCircle } from 'lucide-react'
 import { CaseCard } from './CaseCard'
-import { RISK_LEVELS } from '../../../config/constants'
-
-// Mock Data
-const MOCK_CASES = [
-  {
-    id: 'TC-2024-001',
-    patient_name: 'Rahul Sharma',
-    patient_age: 45,
-    patient_gender: 'Male',
-    risk_level: RISK_LEVELS.HIGH,
-    ai_confidence: 92,
-    symptoms: ['Chest pain', 'Shortness of breath', 'Nausea', 'Sweating'],
-    status: 'pending'
-  },
-  {
-    id: 'TC-2024-002',
-    patient_name: 'Ananya Patel',
-    patient_age: 32,
-    patient_gender: 'Female',
-    risk_level: RISK_LEVELS.MEDIUM,
-    ai_confidence: 78,
-    symptoms: ['High fever', 'Joint pain', 'Headache'],
-    status: 'pending'
-  },
-  {
-    id: 'TC-2024-003',
-    patient_name: 'Vikram Nair',
-    patient_age: 28,
-    patient_gender: 'Male',
-    risk_level: RISK_LEVELS.LOW,
-    ai_confidence: 85,
-    symptoms: ['Mild cough', 'Sore throat'],
-    status: 'reviewed'
-  }
-]
+import { useTriageStore } from '../../../store/triage.store'
+import { CaseSkeleton } from './CaseSkeleton'
 
 export const CaseQueue = () => {
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState('ALL')
+  
+  const { 
+    activeFilter, 
+    setActiveFilter, 
+    isLoading, 
+    getFilteredCases,
+    cases
+  } = useTriageStore()
 
   const filters = ['ALL', 'HIGH RISK', 'MODERATE', 'LOW RISK', 'REVIEWED']
 
@@ -47,8 +22,10 @@ export const CaseQueue = () => {
     navigate(`/cases/${id}`)
   }
 
+  const filteredCases = getFilteredCases()
+
   return (
-    <div className="w-full">
+    <div className="w-full relative min-h-[400px]">
       {/* Brutalist Filter Tabs */}
       <div className="flex overflow-x-auto no-scrollbar gap-0 border-b border-primary mb-8 pb-4">
         {filters.map((filter) => (
@@ -56,10 +33,10 @@ export const CaseQueue = () => {
             key={filter}
             onClick={() => setActiveFilter(filter)}
             className={`
-              font-mono-technical text-xs px-6 py-2 border border-primary transition-all whitespace-nowrap
+              font-mono-technical text-xs px-6 py-2 border border-primary transition-all whitespace-nowrap -mr-px
               ${activeFilter === filter 
-                ? 'bg-primary text-on-primary shadow-brutal translate-x-[2px] translate-y-[2px]' 
-                : 'bg-surface hover:bg-surface-container -mr-px'
+                ? 'bg-primary text-on-primary shadow-[inset_0_-2px_0_var(--color-primary)]' 
+                : 'bg-surface hover:bg-surface-container'
               }
             `}
           >
@@ -68,15 +45,43 @@ export const CaseQueue = () => {
         ))}
       </div>
 
-      {/* List */}
-      <div className="flex flex-col">
-        {MOCK_CASES.map(caseItem => (
-          <CaseCard 
-            key={caseItem.id} 
-            caseData={caseItem} 
-            onClick={handleCardClick}
-          />
-        ))}
+      {/* List / Loading / Empty States */}
+      <div className="flex flex-col gap-4">
+        {isLoading && cases.length === 0 ? (
+          <>
+            <CaseSkeleton />
+            <CaseSkeleton />
+            <CaseSkeleton />
+            <CaseSkeleton />
+          </>
+        ) : filteredCases.length > 0 ? (
+          <motion.div 
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+            }}
+          >
+             {filteredCases.map((caseItem) => (
+                <CaseCard 
+                  key={caseItem.id} 
+                  caseData={caseItem} 
+                  onClick={handleCardClick}
+                />
+             ))}
+          </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-primary/20 bg-surface mt-4"
+          >
+             <CheckCircle size={48} className="text-[#16A34A] mb-4 opacity-80" />
+             <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">You're all caught up!</h3>
+             <p className="font-mono-technical text-xs opacity-60 uppercase">No pending cases match this filter</p>
+          </motion.div>
+        )}
       </div>
     </div>
   )

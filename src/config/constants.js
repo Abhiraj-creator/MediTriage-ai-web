@@ -13,10 +13,12 @@ export const CASE_STATUS = {
 
 export const TABLES = {
   USERS:            'users',
-  DOCTOR_PROFILES:  'doctor_profiles',
+  PROFILES:         'profiles',        // Supabase auth profiles (doctor/patient meta)
+  DOCTOR_PROFILES:  'profiles',        // alias kept for backward compat → maps to 'profiles'
   PATIENT_PROFILES: 'patient_profiles',
   TRIAGE_CASES:     'triage_cases',
-  AI_FEEDBACK:      'ai_feedback',
+  TRIAGE_CASES_VIEW: 'v_triage_cases', // view that joins patient_profiles onto triage_cases
+  AI_FEEDBACK:      'ai_feedback',     // may not exist, service falls back to mock
 }
 
 export const RISK_CONFIG = {

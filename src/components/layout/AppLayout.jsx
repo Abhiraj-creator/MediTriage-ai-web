@@ -2,8 +2,11 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { NewCaseToast } from '../../features/triage/components/NewCaseToast'
+import { useRealtimeCases } from '../../features/triage/hooks/useRealtimeCases'
 
 export const AppLayout = () => {
+  useRealtimeCases()
+
   return (
     <div className="min-h-screen bg-surface flex">
       <Sidebar />

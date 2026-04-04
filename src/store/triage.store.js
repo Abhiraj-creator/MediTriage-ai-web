@@ -6,8 +6,10 @@ export const useTriageStore = create((set, get) => ({
   activeFilter: 'ALL',
   isLoading: false,
   error: null,
+  connectionStatus: 'DISCONNECTED', // 'SUBSCRIBED' | 'DISCONNECTED' | 'RECONNECTING'
 
   setCases: (cases) => set({ cases }),
+  setConnectionStatus: (status) => set({ connectionStatus: status }),
   
   addCase: (newCase) => set((state) => {
     // Prevent duplicates

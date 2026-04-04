@@ -8,9 +8,17 @@ export const CaseCard = ({ caseData, onClick }) => {
     patient_gender,
     risk_level,
     ai_confidence,
-    symptoms,
-    status
+    symptoms: rawSymptoms,
+    detected_symptoms,
+    status,
+    patient_profiles,
+    created_at
   } = caseData
+
+  const symptoms = rawSymptoms || detected_symptoms || []
+  const displayName = patient_profiles?.full_name || patient_name || 'Unknown Patient'
+  const displayAge = patient_profiles?.age || patient_age
+  const displayGender = patient_profiles?.gender || patient_gender
 
   const config = RISK_CONFIG[risk_level]
   
@@ -27,7 +35,7 @@ export const CaseCard = ({ caseData, onClick }) => {
     <div 
       onClick={() => onClick(id)}
       className={`
-        relative p-6 ${bgClass} ${borderClass} border 
+        relative p-6 md:pr-24 ${bgClass} ${borderClass} border 
         ${shadowClass} hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group mb-6
         flex flex-col md:flex-row gap-6 items-start md:items-center justify-between
       `}
@@ -37,9 +45,9 @@ export const CaseCard = ({ caseData, onClick }) => {
 
       <div className="flex-1 ml-4">
         <div className="flex items-center gap-4 mb-2">
-          <h3 className="text-xl font-bold uppercase tracking-tighter">{patient_name}</h3>
+          <h3 className="text-xl font-bold uppercase tracking-tighter">{displayName}</h3>
           <span className="font-mono-technical text-xs px-2 py-0.5 border border-primary">
-            {patient_age}{patient_gender?.substring(0,1)}
+            {displayAge}{displayGender?.substring(0,1)}
           </span>
           {isReviewed && (
             <span className="font-mono-technical text-[10px] bg-green-500 text-white px-2 py-0.5 border border-green-700">
@@ -62,16 +70,16 @@ export const CaseCard = ({ caseData, onClick }) => {
         </div>
       </div>
 
-      <div className="flex flex-row md:flex-col items-center md:items-end gap-6 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-primary/20 md:border-0">
+      <div className="flex flex-row md:flex-row items-center md:items-center justify-end gap-10 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-primary/20 md:border-0 pl-0 md:pl-8 md:border-l">
         <div className="flex flex-col items-start md:items-end">
-          <span className="font-mono-technical text-[10px] opacity-60 mb-1">AI CONFIDENCE</span>
-          <span className="font-mono-technical text-2xl font-bold">{ai_confidence}%</span>
+          <span className="font-mono-technical text-[10px] opacity-60 mb-2 tracking-widest text-[#666]">AI CONFIDENCE</span>
+          <span className="font-mono-technical text-3xl font-black tracking-tight">{ai_confidence}%</span>
         </div>
         
-        <div className="flex flex-col items-start md:items-end">
-           <span className="font-mono-technical text-[10px] opacity-60 mb-1">TRIAGE PRIORITY</span>
+        <div className="flex flex-col items-start md:items-end border-l border-primary/10 pl-10">
+           <span className="font-mono-technical text-[10px] opacity-60 mb-2 tracking-widest text-[#666]">PRIORITY</span>
            <span 
-             className={`font-mono-technical text-sm font-bold px-3 py-1 border`}
+             className={`font-mono-technical text-sm font-bold px-4 py-2 border`}
              style={{
                color: config.color,
                backgroundColor: config.bg,

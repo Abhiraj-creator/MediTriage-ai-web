@@ -35,10 +35,7 @@ export const RegisterPage = () => {
     })
 
     if (success) {
-      // In Supabase with Email Confirmations on, they act somewhat differently. 
-      // Assuming auto-login or prompting them to check email.
-      alert('REGISTRATION SUCCESSFUL. PLEASE VERIFY EMAIL IF REQUIRED.')
-      navigate('/login')
+      navigate('/onboarding')
     } else {
       alert(`REGISTRATION ERROR: ${error.message}`)
     }
@@ -102,12 +99,20 @@ export const RegisterPage = () => {
               <label className="font-mono-technical text-xs block">SPECIALIZATION</label>
               <input
                 type="text"
+                list="specializations"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
                 placeholder="Cardiology"
                 className="w-full bg-surface-container border border-primary p-4 outline-none focus:bg-white transition-colors font-mono-technical text-sm placeholder:text-primary/40 focus:shadow-brutal"
                 required
               />
+              <datalist id="specializations">
+                <option value="Gynaecologist" />
+                <option value="Cardiologist" />
+                <option value="Neurologist" />
+                <option value="Pediatrician" />
+                <option value="General Physician" />
+              </datalist>
             </div>
 
             <div className="space-y-2">

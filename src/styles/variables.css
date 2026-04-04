@@ -1,25 +1,53 @@
-@import "tailwindcss";
+
 
 @theme {
-  --color-primary: #1A1AFF;
-  --color-surface: #FCF9F1;
-  --color-surface-container: #E8E6DE;
-  --color-on-primary: #FFFFFF;
+  --color-primary: var(--color-primary-base);
+  --color-surface: var(--color-surface-base);
+  --color-surface-container: var(--color-surface-container-base);      
+  --color-on-primary: var(--color-on-primary-base);
 
-  --shadow-brutal: 4px 4px 0px #1A1AFF;
+  --shadow-brutal: 4px 4px 0px var(--color-primary-base);   
+  --shadow-brutal-hover: 6px 6px 0px var(--color-primary-base);
+  --shadow-brutal-sm: 2px 2px 0px var(--color-primary-base);
 
-  --font-sans: "Inter", sans-serif;
-  --font-mono-technical: "Space Grotesk", monospace;
+  /* Status Tokens */
+  --risk-high: #D92D20;
+  --risk-high-bg: rgba(217, 45, 32, 0.1);
+  --risk-medium: #F79009;
+  --risk-medium-bg: rgba(247, 144, 9, 0.1);
+  --risk-low: #12B76A;
+  --risk-low-bg: rgba(18, 183, 106, 0.1);
 }
 
 @layer base {
   :root {
-    /* Keep these raw for manual CSS usage if needed, though Tailwind utilities will cover most */
-    --risk-high: #D92D20;
-    --risk-high-bg: rgba(217, 45, 32, 0.1);
-    --risk-medium: #F79009;
-    --risk-medium-bg: rgba(247, 144, 9, 0.1);
-    --risk-low: #12B76A;
-    --risk-low-bg: rgba(18, 183, 106, 0.1);
+    --color-primary-base: #1A1AFF; /* Blue */
+    --color-surface-base: #FCF9F1; /* Cream */
+    --color-surface-container-base: #E8E6DE;
+    --color-on-primary-base: #FFFFFF;
   }
+  .dark {
+    --color-primary-base: #E8E6DE; /* Cream text/borders */
+    --color-surface-base: #0a0a0a; /* Brutalist Dark */
+    --color-surface-container-base: #171717; /* Elevated Dark */
+    --color-on-primary-base: #0a0a0a; 
+  }
+}
+
+/* Base Setup */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-surface-base);
+  color: var(--color-primary-base);
+  border-color: var(--color-primary-base);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: none; }
+  #custom-cursor, #cursor-follower { display: block; }
+}
+
+@media (hover: none) or (pointer: coarse) {
+  #custom-cursor, #cursor-follower { display: none; }
 }

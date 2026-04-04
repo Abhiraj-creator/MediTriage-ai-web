@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { gsap } from 'gsap'
+import { Elastic, gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
+import WebGLRippleImage from '../components/ui/WebGLRippleImage'
+import { easeIn } from 'framer-motion'
+import { Logo } from '../components/common/Logo'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin)
 
@@ -10,7 +13,35 @@ export const LandingPage = () => {
   const containerRef = useRef(null)
   const heroRef = useRef(null)
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 })
+  const [isScrolledPastBlue, setIsScrolledPastBlue] = useState(false)
+  const page2TextRef = useRef(null)
+  
+  // Hover Image State & Ref
+  const hoverImageRef = useRef(null)
+  const [activeHoverImg, setActiveHoverImg] = useState("")
+  const [activeAccordion, setActiveAccordion] = useState(null)
 
+  const footerLogoRef = useRef(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const blueSections = document.querySelectorAll('.blue-section')
+      let isOverBlue = false
+      
+      blueSections.forEach(sec => {
+        const rect = sec.getBoundingClientRect()
+        // If the navbar (top 20px roughly) is within the bounds of a blue section
+        if (rect.top <= 50 && rect.bottom >= 50) {
+          isOverBlue = true
+        }
+      })
+      setIsScrolledPastBlue(!isOverBlue)
+    }
+    window.addEventListener('scroll', handleScroll)
+    // Run once on load
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
   useEffect(() => {
     let ctx = gsap.context(() => {
       // Hero entrance
@@ -30,26 +61,51 @@ export const LandingPage = () => {
       })
 
       // Generic section reveals
-      const reveals = document.querySelectorAll('.reveal')
-      reveals.forEach((el) => {
-        gsap.to(el, {
-          scrollTrigger: {
-            trigger: el,
-            start: "top 90%",
-            toggleActions: "play none none none"
-          },
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power2.out"
-        })
+      gsap.utils.toArray('.reveal').forEach((elem) => {
+        gsap.fromTo(elem, 
+          { y: 50, opacity: 0 },
+          { 
+            y: 0, 
+            opacity: 1, 
+            duration: 1, 
+            scrollTrigger: {
+              trigger: elem,
+              start: "top 85%",
+              toggleActions: "play none none reverse"
+            }
+          }
+        )
       })
+
+      // Page 2 text reveal animation (Inspiration style)
+      if (page2TextRef.current) {
+        // Split text into spans for per-letter animation
+        const text = page2TextRef.current.innerText
+        page2TextRef.current.innerHTML = ''
+        text.split('').forEach(char => {
+          const span = document.createElement('span')
+          span.innerText = char
+          span.style.color = 'rgba(218, 218, 218, 0.4)' // Initial gray color
+          page2TextRef.current.appendChild(span)
+        })
+
+        gsap.to(page2TextRef.current.children, {
+          scrollTrigger: {
+            trigger: page2TextRef.current.children,
+            start: "top 80%",
+            end: "bottom 40%",
+            scrub: 0.5,
+          },
+          stagger: 0.2,
+          color: "#fff"
+        })
+      }
 
       // Service items staggered
       gsap.from(".service-item", {
         scrollTrigger: {
-          trigger: ".services-container",
-          start: "top 85%"
+          trigger: "#capabilities",
+          start: "top 75%"
         },
         opacity: 0,
         x: -20,
@@ -68,30 +124,108 @@ export const LandingPage = () => {
         y: 20,
         stagger: 0.1,
         duration: 0.8,
-        ease: "power2.out"
+        ease: "power2.out",
+        clearProps: "transform"
       })
+
+      // PIPELINE SECTION: Stacking Cards Animation
+      // Pin the left side title ONLY
+      ScrollTrigger.create({
+        trigger: ".left-pin-container",
+        start: "top top+=150", // Start pinning when it reaches near the top
+        endTrigger: "#pipeline",
+        end: "bottom bottom", // Unpin when the entire section is scrolled past
+        pin: true,
+        pinSpacing: false,
+      });
+
+      // Awwwards Style Cursor Follower for Capabilities
+      if (hoverImageRef.current) {
+        gsap.set(hoverImageRef.current, { xPercent: -50, yPercent: -50 });
+        let xTo = gsap.quickTo(hoverImageRef.current, "x", {duration: 0.4, ease: "power3"}),
+            yTo = gsap.quickTo(hoverImageRef.current, "y", {duration: 0.4, ease: "power3"});
+
+        window.addEventListener("mousemove", e => {
+          xTo(e.clientX);
+          yTo(e.clientY);
+        });
+      }
+
+      // Magic Sliding Background for the News Grid
+      const highlighter = document.getElementById("magic-highlighter");
+      const hoverCards = gsap.utils.toArray('.blog-card-hoverable');
+      const hoverContainer = document.getElementById("blog-grid-container");
+
+      if (hoverContainer && highlighter) {
+        hoverCards.forEach((card) => {
+          card.addEventListener('mouseenter', () => {
+            const rect = card.getBoundingClientRect();
+            const containerRect = hoverContainer.getBoundingClientRect();
+            
+            gsap.to(highlighter, {
+               x: rect.left - containerRect.left,
+               y: rect.top - containerRect.top,
+               width: rect.width,
+               height: rect.height,
+               opacity: 1,
+               duration: 0.4,
+               ease: "power3.out"
+            });
+            
+            // Text color invert
+            gsap.to(card.querySelectorAll('.animate-text'), { color: "#ffffff", duration: 0.2 });
+          });
+          
+          card.addEventListener('mouseleave', () => {
+             // Reset to primary color #0a3cce
+            gsap.to(card.querySelectorAll('.animate-text'), { color: "#0a3cce", duration: 0.2 });
+          });
+        });
+
+        hoverContainer.addEventListener('mouseleave', () => {
+           gsap.to(highlighter, { opacity: 0, duration: 0.4, ease: "power3.out" });
+        });
+      }
+
+      // Footer Logo Scroll Spin Animation 
+      // Attached to the footer itself so it visually spins a full 360 degrees while the user is actually looking at it
+      if (footerLogoRef.current) {
+        gsap.fromTo(footerLogoRef.current, 
+          { 
+            rotation: 90, 
+            scale: 0.1 ,
+            duration:1
+          },
+          {
+            rotation: 270,
+            scale: .6, // Scales up dynamically to fill the space
+            ease: easeIn,
+            scrollTrigger: {
+              trigger: "#contact", // The footer element
+              start: "top bottom", // Starts when top of footer enters bottom of screen
+              end: "bottom bottom", // Reaches full scale when footer is fully visible
+              scrub: 1 
+            }
+          }
+        );
+      }
+
     }, containerRef)
 
-    return () => ctx.revert()
+    return () => {
+      ctx.revert()
+    }
   }, [])
 
-  const handleMouseMove = (e) => {
-    if (!heroRef.current) return
-    const rect = heroRef.current.getBoundingClientRect()
-    // Calculate position relative to the hero section
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+  // Smooth scroll handler using GSAP
+  const scrollToSection = (e, id) => {
+    e.preventDefault()
+    gsap.to(window, { 
+      duration: 1.2, 
+      // scrollTo: { y: id, offsetY: 50 }, 
+      ease: "power4.inOut" 
     })
   }
-
-  const handleMouseLeave = () => {
-    // Hide mask by moving it far off screen
-    setMousePos({ x: -1000, y: -1000 })
-  }
-
-  // A striking abstract technical video from a public asset source
-  const BgVideoUrl = "https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-connections-in-a-network-31514-large.mp4"
 
   return (
     <div ref={containerRef} className="bg-surface text-primary min-h-screen overflow-x-hidden selection:bg-primary selection:text-white">
@@ -127,113 +261,141 @@ export const LandingPage = () => {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* 1. TopNavBar (Hidden in favor of floating elements in Hero for exact match) */}
-      
-      {/* 2. Hero Section - Extreme Refactor for Video & Shader Match */}
-      <section 
-        ref={heroRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="relative h-screen flex flex-col justify-end p-4 md:p-8 bg-primary overflow-hidden border-b border-primary cursor-crosshair"
-      >
-        {/* Underlay Video (What is revealed - e.g., inverted/black and white) */}
-        <div className="absolute inset-0 z-0 bg-surface">
-           <video src={BgVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover grayscale opacity-50 contrast-150" />
+      {/* 1. Unified TopNavBar */}
+      <nav className={`fixed top-0 left-0 w-full h-[12vh] px-6 md:px-12 flex items-center justify-between z-50 pointer-events-auto transition-all duration-300 ${isScrolledPastBlue ? 'bg-[#0a3cce]/70 backdrop-blur-md shadow-md text-white' : 'bg-transparent text-white'}`}>
+        {/* Left: Logo */}
+        <div className="flex items-center">
+          <Logo className={`w-10 h-10 md:w-12 md:h-12 transition-all duration-300 ${isScrolledPastBlue ? 'filter-none opacity-100' : 'filter opacity-90'}`} pathClassName="fill-white" />
         </div>
-
-        {/* Overlay Video (The normal view with Halftone and Blue Duotone) */}
-        {/* We use a CSS Mask to cut a hole in this layer, revealing the underlay where the mouse is. */}
-        <div 
-           className="absolute inset-0 z-10 duotone-blue halftone-overlay pointer-events-none transition-[mask-position] duration-75"
-           style={{
-             maskImage: `radial-gradient(circle 350px at ${mousePos.x}px ${mousePos.y}px, transparent 15%, black 40%)`,
-             WebkitMaskImage: `radial-gradient(circle 350px at ${mousePos.x}px ${mousePos.y}px, transparent 15%, black 40%)`
-           }}
-        >
-           <video src={BgVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-           {/* Center architectural line */}
-           <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/30 transform -translate-x-1/2 pattern-line"></div>
-        </div>
-
-        {/* Top Floating Header Elements (over everything) */}
-        <div className="absolute top-8 left-8 z-50">
-           <div className="border border-white text-white px-4 py-2 flex items-center gap-4 bg-primary/20 backdrop-blur-sm shadow-[4px_4px_0px_#1A1AFF]">
-             <div className="w-5 h-5 border border-white rounded-full flex items-center justify-center relative">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-                {/* Crosshairs */}
-                <div className="absolute w-full h-[1px] bg-white"></div>
-                <div className="absolute h-full w-[1px] bg-white"></div>
-             </div>
-             <span className="font-mono-technical text-xs tracking-widest font-bold">MEDITRIAGE CORE INC.</span>
-           </div>
+        {/* Center: Links */}
+        <div className="hidden lg:flex gap-12 items-center">
+           <a className="insp-font-a text-base md:text-lg hover-underline-animation" href="#pipeline" onClick={(e) => scrollToSection(e, "#pipeline")}>PIPELINE</a>
+           <a className="insp-font-a text-base md:text-lg hover-underline-animation" href="#capabilities" onClick={(e) => scrollToSection(e, "#capabilities")}>CAPABILITIES</a>
+           <a className="insp-font-a text-base md:text-lg hover-underline-animation" href="#contact" onClick={(e) => scrollToSection(e, "#contact")}>SYSTEM CONTACT</a>
         </div>
         
-        <div className="absolute top-8 right-8 z-50 flex gap-4">
-           <Link to="/login" className="w-10 h-10 border border-white rounded-full flex items-center justify-center text-white hover:bg-white hover:text-primary transition-colors backdrop-blur-sm bg-primary/20">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-           </Link>
-           <Link to="/register" className="border border-white text-white px-6 py-2 font-mono-technical text-xs tracking-widest hover:bg-white hover:text-primary transition-colors flex items-center backdrop-blur-sm bg-primary/20">
-              INITIALIZE
-           </Link>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-6">
+          <Link to="/login" className="hidden md:block insp-font-a text-base md:text-lg hover-underline-animation">SYSTEM LOGIN</Link>
+          <Link to="/register" className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 ${isScrolledPastBlue ? 'border-white text-white hover:bg-white hover:text-[#0a3cce]' : 'border-white text-white hover:bg-white hover:text-[#0b48ed]'}`}>
+             INITIALIZE
+             <i className="ri-arrow-right-line"></i>
+          </Link>
         </div>
+      </nav>
 
-        {/* Floating Side Text */}
-        <div className="absolute right-[10%] top-1/2 -translate-y-1/2 z-40 max-w-xs text-white hero-sub pointer-events-none">
-           <p className="text-xl md:text-3xl font-medium leading-[1.1]">
-              Answering all of your clinical intake needs.
-           </p>
-        </div>
+      {/* Injecting Remix Icons and Fonts for Inspiration Hero */}
+      <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@100;300;400;500&display=swap');
+        .insp-font-a { font-family: 'Jost', sans-serif; font-weight: 350; }
+        .insp-font-c { font-family: 'Jost', sans-serif; font-weight: 300; }
+        
+        .hover-underline-animation {
+          display: inline-block;
+          position: relative;
+        }
+        .hover-underline-animation::after {
+          content: '';
+          position: absolute;
+          width: 100%;
+          transform: scaleX(0);
+          height: 1px;
+          bottom: -2px;
+          left: 0;
+          background-color: currentColor;
+          transform-origin: bottom right;
+          transition: transform 0.3s ease-out;
+        }
+        .hover-underline-animation:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
+        }
+        
+        .service-hover-translate { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .service-item:hover .service-hover-translate { transform: translateX(20px); }
+        .service-item:hover .service-hover-icon { transform: rotate(45deg); }
+        
+        .floating-hover-img {
+            pointer-events: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 320px; height: 400px;
+            z-index: 100;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        .floating-hover-img.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+      `}</style>
 
-        {/* Giant Bottom Typography */}
-        <div className="relative z-40 text-white w-full pointer-events-none">
-          <h1 className="text-[clamp(4rem,15vw,260px)] font-black leading-[0.8] tracking-tighter uppercase hero-title hero-word drop-shadow-lg">
-             MediTriage
-          </h1>
-          <h1 className="text-[clamp(4rem,15vw,260px)] font-black leading-[0.8] tracking-tighter uppercase hero-title hero-word drop-shadow-lg">
-             AI Core.
-          </h1>
-        </div>
-      </section>
-
-      {/* 3. About Section */}
-      <section className="bg-primary text-on-primary py-20 md:py-32 px-4 md:px-6 border-t border-white/20">
-        <div className="max-w-screen-2xl mx-auto">
-            <h2 className="text-2xl md:text-5xl font-bold leading-tight mb-12 md:mb-20 max-w-4xl reveal">
-                WE ARE THE ARCHITECTS OF CLINICAL PRECISION, NAVIGATING THE COMPLEXITY OF PATIENT DATA TO ENSURE EVERY DIAGNOSIS IS INSTANT.
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 border-t border-white/30 pt-12">
-                <div className="reveal">
-                    <h3 className="font-mono-technical text-xs mb-4 md:mb-6 opacity-60">OUR CORE PHILOSOPHY</h3>
-                    <p className="text-base md:text-lg leading-relaxed">
-                        In an era of shifting overcrowding and complex triaging protocols, MediTriage stands as the definitive bridge between raw patient input and municipal clinical deployment. We treat every intake as a technical puzzle, solving for efficiency, safety, and speed.
-                    </p>
-                </div>
-                <div class="reveal">
-                    <h3 className="font-mono-technical text-xs mb-4 md:mb-6 opacity-60">STRATEGIC PRECISION</h3>
-                    <p className="text-base md:text-lg leading-relaxed">
-                        Our AI integrates directly with your workflow, providing real-time websockets and actionable insights that keep your ER timeline on track. From patient routing to predictive analytics, we are your tactical advantage in the clinical environment.
-                    </p>
-                </div>
+      {/* 2. Hero Section - EXACT Inspiration Implementation */}
+      <section 
+        id="page1"
+        className="relative h-[100svh] w-screen overflow-hidden bg-[#0a3cce] blue-section"
+      >
+        <video 
+          src="https://thisismagma.com/wp-content/themes/magma/assets/home/hero/1.mp4?2" 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        
+        <div className="absolute bottom-[10%] left-[10%] z-10">
+            <h1 className="text-[6vw] lg:text-[5vw] text-white insp-font-a leading-[1.1] lg:leading-[80px] m-0 p-0 font-light drop-shadow-md">
+               Expedite Clinical <br /> Intake Decisions
+            </h1>
+            <div className="flex flex-col lg:flex-row gap-[30px] mt-[40px] lg:items-center">
+                <h4 className="text-[17px] lg:text-[19px] text-white insp-font-c leading-[1.4] lg:leading-[30px] m-0 p-0 font-light max-w-xl">
+                    Deploy real-time AI scoring for emergency workflows <br className="hidden lg:block" />
+                    and orchestrate patient data securely.
+                </h4>
+                <Link to="/register" className="flex items-center justify-center rounded-[50px] text-black bg-white border-none insp-font-a font-medium h-[50px] md:h-[60px] px-8 text-sm md:text-lg cursor-pointer hover:bg-gray-200 transition-colors shadow-lg w-fit">
+                  ACCESS SYSTEM
+                </Link>
             </div>
         </div>
       </section>
+
+      <div 
+        id="page2" 
+        className="h-[100svh] w-screen relative bg-[#0a3cce] blue-section flex flex-col items-center justify-center gap-[40px] px-6"
+      >
+          <h2 className="insp-font-a text-[rgba(255,255,255,0.648)] font-[100] w-[85%] md:w-[70%] text-sm md:text-2xl text-center">
+             ARCHITECTS OF CLINICAL PRECISION
+          </h2>
+          <h1 
+            ref={page2TextRef}
+            className="insp-font-a w-[85%] md:w-[70%] leading-[1.2] md:leading-[1.3] text-[6vw] md:text-[4.5vw] font-[100] m-0 p-0 text-center whitespace-pre-wrap"
+          >
+             We navigate the complexity of patient data to ensure every diagnosis is instant. Our AI integrates directly with your workflow for strategic triage insights.
+          </h1>
+      </div>
 
       {/* 4. "Here at every step" / The Pipeline */}
       <section id="pipeline" className="bg-surface-container py-20 md:py-32 px-4 md:px-6 relative">
         <div className="grid-blueprint max-w-screen-2xl mx-auto">
-            <div className="col-span-3 md:col-span-1 vertical-divider md:pr-8">
-                <h2 className="text-5xl md:text-7xl font-black leading-[0.9] uppercase md:sticky md:top-32 reveal">
-                    Here<br/>at every<br/>step
-                </h2>
-                <div className="mt-8 md:mt-12 reveal">
-                    <div className="wavy-line opacity-30 mb-8"></div>
-                    <p className="font-mono-technical text-sm">PHASE 01 — PHASE 04</p>
+            <div className="col-span-3 md:col-span-1 vertical-divider md:pr-8 left-pin-container relative">
+                <div>
+                    <h2 className="text-5xl md:text-7xl font-black leading-[0.9] uppercase reveal">
+                        Here<br/>at every<br/>step
+                    </h2>
+                    <div className="mt-8 md:mt-12 reveal">
+                        <div className="wavy-line opacity-30 mb-8"></div>
+                        <p className="font-mono-technical text-sm">PHASE 01 — PHASE 04</p>
+                    </div>
                 </div>
             </div>
             
-            <div className="col-span-3 md:col-span-2 md:pl-12 space-y-8 md:space-y-16 py-8 md:py-12 relative z-10">
+            <div className="col-span-3 md:col-span-2 md:pl-12 py-8 md:py-12 space-y-16 relative z-10">
                 {/* Step 1 */}
-                <div className="flex justify-start reveal">
+                <div className="flex justify-start pipeline-card reveal z-[1] relative">
                     <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">01</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Initial Data Intake</h4>
@@ -242,7 +404,7 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 2 */}
-                <div className="flex justify-end reveal">
+                <div className="flex justify-end pipeline-card reveal z-[2] relative">
                     <div className="tilt-2 bg-primary text-on-primary border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[-4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-surface pb-2">02</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Algorithmic Scoring</h4>
@@ -251,7 +413,7 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 3 */}
-                <div className="flex justify-start reveal">
+                <div className="flex justify-start pipeline-card reveal z-[3] relative">
                     <div className="tilt-3 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">03</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Realtime Websockets</h4>
@@ -260,7 +422,7 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 4 */}
-                <div className="flex justify-end reveal">
+                <div className="flex justify-end pipeline-card reveal z-[4] relative">
                     <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">04</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Physician Override</h4>
@@ -282,34 +444,74 @@ export const LandingPage = () => {
                 </div>
             </div>
             
-            <div className="col-span-3 md:col-span-2 flex flex-col justify-center py-8 md:py-24 md:pl-12 services-container">
-                <div className="space-y-0 border-t border-primary">
-                    <div className="group border-b border-primary py-6 md:py-8 flex justify-between items-center bg-surface hover:bg-primary hover:text-on-primary transition-all px-2 md:px-6 service-item">
-                        <span className="font-mono-technical text-[10px] md:text-xs">01/05</span>
-                        <h3 className="text-lg md:text-3xl font-bold uppercase">NLP Triage Processing</h3>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                    </div>
-                    <div className="group border-b border-primary py-6 md:py-8 flex justify-between items-center bg-surface hover:bg-primary hover:text-on-primary transition-all px-2 md:px-6 service-item">
-                        <span className="font-mono-technical text-[10px] md:text-xs">02/05</span>
-                        <h3 className="text-lg md:text-3xl font-bold uppercase">Realtime Synchronization</h3>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                    </div>
-                    <div className="group border-b border-primary py-6 md:py-8 flex justify-between items-center bg-surface hover:bg-primary hover:text-on-primary transition-all px-2 md:px-6 service-item">
-                        <span className="font-mono-technical text-[10px] md:text-xs">03/05</span>
-                        <h3 className="text-lg md:text-3xl font-bold uppercase">Confidence Intervals</h3>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                    </div>
-                    <div className="group border-b border-primary py-6 md:py-8 flex justify-between items-center bg-surface hover:bg-primary hover:text-on-primary transition-all px-2 md:px-6 service-item">
-                        <span className="font-mono-technical text-[10px] md:text-xs">04/05</span>
-                        <h3 className="text-lg md:text-3xl font-bold uppercase">Brutalist UI Engine</h3>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                    </div>
-                    <div className="group border-b border-primary py-6 md:py-8 flex justify-between items-center bg-surface hover:bg-primary hover:text-on-primary transition-all px-2 md:px-6 service-item">
-                        <span className="font-mono-technical text-[10px] md:text-xs">05/05</span>
-                        <h3 className="text-lg md:text-3xl font-bold uppercase">Clinical Sign-off Logs</h3>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                    </div>
+            <div className="col-span-3 md:col-span-2 flex flex-col justify-center py-8 md:py-24 md:pl-12 services-container relative">
+                <div className="space-y-0 border-t border-primary relative z-10">
+                    {[
+                      { num: "01/05", title: "NLP Triage Processing", img: "https://images.unsplash.com/photo-1620712948343-0008eccfc75c?auto=format&fit=crop&w=600&q=80", desc: "Our models process unstructured patient intakes instantly, extracting critical symptom data without manual entry. Precision-engineered for high-velocity triage workflows." },
+                      { num: "02/05", title: "Realtime Synchronization", img: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80", desc: "Leveraging cutting-edge websockets to sync patient states across the entire hospital network seamlessly. No latency, zero lag, fully synchronized clinical command." },
+                      { num: "03/05", title: "Confidence Intervals", img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80", desc: "Every diagnosis comes with a dynamically calculated safety threshold, allowing doctors to interpret model certainty and mitigate high-risk outcomes confidently." },
+                      { num: "04/05", title: "Brutalist UI Engine", img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80", desc: "Zero visual clutter. The interface presents only the most vital information, ensuring that clinicians aren't overwhelmed by bloated UI paradigms." },
+                      { num: "05/05", title: "Clinical Sign-off Logs", img: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=600&q=80", desc: "All automated actions are securely queued for a final human-in-the-loop validation, providing legally compliant audit trails for modern enterprise healthcare." }
+                    ].map((feature, idx) => {
+                        const isActive = activeAccordion === idx;
+                        return (
+                        <div key={idx} className="border-b border-primary bg-surface transition-colors duration-300 group">
+                          {/* Header Row */}
+                          <div 
+                            onMouseEnter={() => { setActiveHoverImg(feature.img); }}
+                            onMouseLeave={() => { setActiveHoverImg(""); }}
+                            onClick={() => setActiveAccordion(isActive ? null : idx)}
+                            className={`py-6 md:py-8 flex justify-between items-center px-2 md:px-6 service-item cursor-pointer transition-colors ${isActive ? 'bg-primary text-on-primary' : 'hover:bg-primary hover:text-on-primary'}`}
+                          >
+                              <div className="flex items-center gap-6 md:gap-12 service-hover-translate">
+                                  <span className="font-mono-technical text-[10px] md:text-xs">
+                                    {feature.num}
+                                  </span>
+                                  <h3 className="text-lg md:text-3xl font-bold uppercase transition-colors">
+                                    {feature.title}
+                                  </h3>
+                              </div>
+                              <span className="text-xl md:text-3xl font-light transform transition-transform duration-300" style={{ transform: isActive ? 'rotate(45deg)' : 'rotate(0deg)' }}>
+                                  +
+                              </span>
+                          </div>
+                          
+                          {/* Expanded Content */}
+                          <div 
+                            className={`overflow-hidden transition-all duration-500 ease-in-out`}
+                            style={{ maxHeight: isActive ? '800px' : '0px', opacity: isActive ? 1 : 0 }}
+                          >
+                            <div className="p-6 md:p-12 flex flex-col md:flex-row gap-8 bg-surface-container border-t border-primary">
+                               <div className="w-full md:w-1/2 h-[300px] md:h-[400px] border border-primary overflow-hidden relative">
+                                  <img src={feature.img} alt={feature.title} className="w-full h-full object-cover duotone-blue hover:filter-none transition-all duration-700 hover:scale-105" />
+                               </div>
+                               <div className="w-full md:w-1/2 flex flex-col justify-center">
+                                  <h4 className="text-2xl font-black mb-4 uppercase">{feature.title}</h4>
+                                  <p className="font-mono-technical text-sm md:text-base opacity-80 leading-relaxed max-w-xl">
+                                    {feature.desc}
+                                  </p>
+                                  <div className="mt-8">
+                                     <button onClick={() => setActiveAccordion(null)} className="border border-primary px-6 py-2 font-mono-technical text-xs hover:bg-primary hover:text-on-primary transition-colors">
+                                        CLOSE DETAILS
+                                     </button>
+                                  </div>
+                               </div>
+                            </div>
+                          </div>
+                        </div>
+                    );
+                  })}
                 </div>
+            </div>
+            
+            {/* The Floating Image Follower */}
+            <div 
+               ref={hoverImageRef} 
+               className={`floating-hover-img border border-primary bg-primary ${activeHoverImg && !activeAccordion ? 'active' : ''}`}
+            >
+               {activeHoverImg && (
+                 <img src={activeHoverImg} alt="Feature visual" className="w-full h-full object-cover duotone-blue scale-110 group-hover:scale-100 transition-transform duration-700" />
+               )}
             </div>
         </div>
       </section>
@@ -317,106 +519,116 @@ export const LandingPage = () => {
       {/* 6. High-Contrast News / Analytics Block */}
       <section className="bg-surface-container py-20 md:py-32 border-t border-primary border-b">
         <div className="grid-blueprint px-4 md:px-6 max-w-screen-2xl mx-auto blog-container">
-            <div className="col-span-3 md:col-span-1 md:pr-12 reveal mb-8 md:mb-0">
-                <div className="halftone-overlay h-full border border-primary overflow-hidden min-h-[300px] md:min-h-[600px] bg-primary relative">
-                    <div className="absolute inset-0 flex items-center justify-center p-8 text-on-primary text-center">
-                       <p className="font-mono-technical text-2xl">45 MINUTE REDUCTION IN DOOR-TO-DOC LATENCY.</p>
+            <div className="col-span-3 md:col-span-1 md:pr-12 reveal mb-8 md:mb-0 h-full">
+                <div className="h-full border border-primary overflow-hidden min-h-[300px] md:min-h-[600px] bg-primary relative group">
+                    <WebGLRippleImage 
+                        imageUrl="https://images.unsplash.com/photo-1555255707-c07966088b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center p-8 text-on-primary text-center pointer-events-none z-10 bg-primary/20 group-hover:bg-transparent transition-colors duration-500">
+                       <p className="font-mono-technical text-2xl drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">45 MINUTE REDUCTION IN DOOR-TO-DOC LATENCY.</p>
                     </div>
                 </div>
             </div>
-            <div className="col-span-3 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-px bg-primary border border-primary reveal">
-                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between hover:bg-surface transition-colors blog-card min-h-[200px]">
-                    <div>
-                        <span className="font-mono-technical text-[10px] block mb-4">SYSTEM STAT / REGULATION</span>
-                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4">Fully compliant with standard HIPAA pipelines</h4>
+            <div id="blog-grid-container" className="col-span-3 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-px bg-primary border border-primary reveal relative z-0">
+                {/* Magic sliding highlighter - absolute pos, beneath text but above card base */}
+                <div id="magic-highlighter" className="absolute top-0 left-0 bg-primary z-0 pointer-events-none opacity-0"></div>
+
+                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
+                    <div className="relative z-10 pointer-events-none">
+                        <span className="font-mono-technical text-[10px] block mb-4 animate-text">SYSTEM STAT / REGULATION</span>
+                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4 animate-text">Fully compliant with standard HIPAA pipelines</h4>
                     </div>
-                    <svg className="w-6 h-6 self-end" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <svg className="w-6 h-6 self-end animate-text relative z-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </div>
                 
-                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between hover:bg-surface transition-colors blog-card min-h-[200px]">
-                    <div>
-                        <span className="font-mono-technical text-[10px] block mb-4">SYSTEM STAT / TECH</span>
-                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4">Zustand & Supabase Realtime Architecture</h4>
+                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
+                    <div className="relative z-10 pointer-events-none">
+                        <span className="font-mono-technical text-[10px] block mb-4 animate-text">SYSTEM STAT / TECH</span>
+                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4 animate-text">Zustand & Supabase Realtime Architecture</h4>
                     </div>
-                    <svg className="w-6 h-6 self-end" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <svg className="w-6 h-6 self-end animate-text relative z-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </div>
                 
-                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between hover:bg-surface transition-colors blog-card min-h-[200px]">
-                    <div>
-                        <span className="font-mono-technical text-[10px] block mb-4">SYSTEM STAT / SAFETY</span>
-                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4">Automated ESI Scoring built for high accuracy</h4>
+                <div className="bg-surface-container p-6 md:p-8 flex flex-col justify-between blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
+                    <div className="relative z-10 pointer-events-none">
+                        <span className="font-mono-technical text-[10px] block mb-4 animate-text">SYSTEM STAT / SAFETY</span>
+                        <h4 className="text-xl md:text-2xl font-bold uppercase mb-4 animate-text">Automated ESI Scoring built for high accuracy</h4>
                     </div>
-                    <svg className="w-6 h-6 self-end" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <svg className="w-6 h-6 self-end animate-text relative z-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </div>
                 
-                {/* CTA Card Blue */}
-                <Link to="/register" className="bg-primary p-6 md:p-8 flex flex-col justify-center items-center text-on-primary hover:bg-primary/90 transition-colors cursor-pointer text-center group blog-card min-h-[200px]">
-                    <h4 className="text-lg md:text-xl font-bold uppercase mb-2">Deploy The Blueprint</h4>
-                    <svg className="w-10 h-10 group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                {/* CTA Card  */}
+                <Link to="/register" className="bg-surface-container p-6 md:p-8 flex flex-col justify-center items-center group blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
+                    <h4 className="text-lg md:text-xl font-bold uppercase mb-2 animate-text relative z-10 pointer-events-none">Deploy The Blueprint</h4>
+                    <svg className="w-10 h-10 group-hover:translate-x-2 transition-transform animate-text relative z-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </Link>
             </div>
         </div>
       </section>
 
       {/* 8. Footer Section */}
-      <footer id="contact" className="bg-primary text-surface-container min-h-[600px] md:h-[716px] relative flex items-center py-20 md:py-0 px-4 md:px-6 section-reveal border-t border-primary overflow-hidden">
-        <div className="absolute left-10 top-1/2 -translate-y-1/2 opacity-10 pointer-events-none hidden md:block">
-            <div className="w-[500px] h-[500px] border border-white rounded-full flex items-center justify-center">
-                <div className="w-full h-px bg-white absolute"></div>
-                <div className="w-px h-full bg-white absolute"></div>
-                <div className="w-[200px] h-[200px] border border-white rounded-full"></div>
+      <footer id="contact" className="bg-primary text-surface-container min-h-[600px] md:min-h-[716px] relative flex md:items-center py-20 px-4 md:px-6 section-reveal border-t border-primary overflow-hidden">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden md:flex items-center z-0 w-[450px] lg:w-[750px] h-[450px] lg:h-[750px] overflow-visible" style={{ transform: 'translateX(-25%)' }}>
+            <div ref={footerLogoRef} className="origin-center w-full h-full flex items-center justify-center ml-[8vw] mt-[-20vh]">
+               <Logo className="w-full h-full opacity-90 mix-blend-overlay" pathClassName="fill-white" />
             </div>
         </div>
         
-        <div className="grid-blueprint w-full max-w-screen-2xl mx-auto relative z-10 reveal">
-            <div className="col-span-3 md:col-span-1 vertical-divider border-white/20 mb-12 md:mb-0">
-                <div className="mb-12 md:mb-20">
-                    <h5 className="font-mono-technical text-xs mb-8">MEDITRIAGE CORE INC.</h5>
-                    <div className="space-y-4">
-                        <Link to="/login" className="block text-3xl md:text-4xl font-bold hover:tracking-widest transition-all uppercase">SYSTEM LOGIN</Link>
-                        <Link to="/register" className="block text-3xl md:text-4xl font-bold hover:tracking-widest transition-all uppercase">SECURE CLEARANCE</Link>
-                        <a href="#pipeline" className="block text-3xl md:text-4xl font-bold hover:tracking-widest transition-all uppercase">PIPELINE INFO</a>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 w-full max-w-screen-2xl mx-auto relative z-10 reveal">
+            
+            {/* Left Box (Copyright) - Keeps distance from spinning logo */}
+            <div className="md:col-span-4 lg:col-span-5 flex flex-col justify-end pt-[200px] md:pt-0">
+                <div className="mb-4">
+                    <h5 className="font-mono-technical text-xs">MEDITRIAGE CORE INC.</h5>
                 </div>
                 <div className="font-mono-technical text-[10px] opacity-40">
                     ©2026 MEDITRIAGE AI. ALL RIGHTS RESERVED.
                 </div>
             </div>
             
-            <div className="col-span-3 md:col-span-1 vertical-divider border-white/20 md:pl-12 flex flex-col justify-between mb-12 md:mb-0">
-                <div>
-                    <h5 className="font-mono-technical text-xs mb-8">SYSTEM MANUAL</h5>
-                    <ul className="space-y-4 font-mono-technical text-xs">
-                        <li><a className="hover:underline" href="#">Triage Timelines</a></li>
-                        <li><a className="hover:underline" href="#">Websocket Architecture</a></li>
-                        <li><a className="hover:underline" href="#">Algorithmic Metrics</a></li>
-                        <li><a className="hover:underline" href="#">Corporate Integration</a></li>
-                    </ul>
-                </div>
-                <div className="mt-8 md:mt-0">
-                    <h5 className="font-mono-technical text-xs mb-4">LEGAL ENCLAVE</h5>
-                    <div className="flex gap-4 font-mono-technical text-[10px]">
-                        <a className="hover:underline" href="#">HIPAA COMPLIANCE</a>
-                        <a className="hover:underline" href="#">TERMS OF SERVICE</a>
+            {/* Right Layout (Links) - Compact safely away from logo */}
+            <div className="md:col-span-8 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-12 lg:gap-16 md:pl-12">
+                
+                {/* Column: SYSTEM MANUAL */}
+                <div className="flex flex-col justify-between">
+                    <div>
+                        <h5 className="font-mono-technical text-xs mb-8 opacity-70">SYSTEM MANUAL</h5>
+                        <ul className="space-y-4 font-mono-technical text-xs">
+                            <li><a className="hover:underline hover:opacity-100 transition-opacity" href="#">Triage Timelines</a></li>
+                            <li><a className="hover:underline hover:opacity-100 transition-opacity" href="#">Websocket Architecture</a></li>
+                            <li><a className="hover:underline hover:opacity-100 transition-opacity" href="#">Algorithmic Metrics</a></li>
+                            <li><a className="hover:underline hover:opacity-100 transition-opacity" href="#">Corporate Integration</a></li>
+                        </ul>
+                    </div>
+                    <div className="mt-12 md:mt-24">
+                        <h5 className="font-mono-technical text-xs mb-4 opacity-70">LEGAL ENCLAVE</h5>
+                        <div className="flex gap-4 font-mono-technical text-[10px]">
+                            <a className="hover:underline" href="#">HIPAA COMPLIANCE</a>
+                            <a className="hover:underline" href="#">TERMS OF SERVICE</a>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div className="col-span-3 md:col-span-1 md:pl-12 flex flex-col justify-between">
-                <div className="mb-12 md:mb-0">
-                    <h5 className="font-mono-technical text-xs mb-8">CONTACT US</h5>
-                    <p className="text-xl md:text-2xl font-bold mb-4">375 Patient Flow St,<br/>Level 4 Database<br/>San Francisco, CA</p>
-                    <p className="font-mono-technical text-sm mb-8 md:mb-12">T: +1 800 555 0199</p>
-                    
-                    <div className="border-b border-white/30 pb-2 mb-4 flex items-center justify-between">
-                        <input className="bg-transparent border-none p-0 font-mono-technical text-xs w-full focus:ring-0 outline-none placeholder:text-white/40 text-on-primary" placeholder="JOIN THE TRIAGE MAILING LIST" type="email" />
-                        <button><svg className="w-5 h-5 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M9 5l7 7-7 7"/></svg></button>
+                
+                {/* Column: CONTACT US */}
+                <div className="flex flex-col justify-between">
+                    <div className="mb-12 md:mb-0">
+                        <h5 className="font-mono-technical text-xs mb-8 opacity-70">CONTACT US</h5>
+                        <p className="text-xl md:text-2xl font-bold mb-4">375 Patient Flow St,<br/>Level 4 Database<br/>San Francisco, CA</p>
+                        <p className="font-mono-technical text-sm mb-8 md:mb-12">T: +1 800 555 0199</p>
+                        
+                        <div className="border-b border-white/30 pb-2 mb-4 flex items-center justify-between group">
+                            <input className="bg-transparent border-none p-0 font-mono-technical text-xs w-full focus:ring-0 outline-none placeholder:text-white/40 text-on-primary" placeholder="JOIN THE TRIAGE MAILING LIST" type="email" />
+                            <button className="group-hover:translate-x-1 transition-transform">
+                                <svg className="w-5 h-5 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex gap-4 md:gap-6">
+                        <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-4 py-2 hover:bg-white hover:text-primary transition-colors" href="#">LINKEDIN</a>
+                        <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-4 py-2 hover:bg-white hover:text-primary transition-colors" href="#">GITHUB</a>
                     </div>
                 </div>
-                <div className="flex gap-4 md:gap-6">
-                    <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-3 py-1 hover:bg-white hover:text-primary transition-colors" href="#">LINKEDIN</a>
-                    <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-3 py-1 hover:bg-white hover:text-primary transition-colors" href="#">GITHUB</a>
-                </div>
+
             </div>
         </div>
       </footer>
