@@ -30,7 +30,10 @@ export const OnboardingPage = () => {
     await authService.updateProfile(session.user.id, {
       full_name: fullName,
       specialization: specialization,
-      role: 'doctor'
+      role: 'doctor',
+      medical_reg_number: license,
+      years_experience: parseInt(experience) || 0,
+      hospital_name: hospital
     })
     setLoading(false)
     navigate('/dashboard')

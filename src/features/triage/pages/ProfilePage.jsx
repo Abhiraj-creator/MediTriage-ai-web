@@ -7,6 +7,7 @@ export const ProfilePage = () => {
   
   const [activeTab, setActiveTab] = useState('profile')
   const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   // Use raw metadata from signup in case doctorProfile isn't available
   const fullName = doctorProfile?.full_name || user?.user_metadata?.name || user?.user_metadata?.full_name || 'Dr. Unknown'
@@ -35,7 +36,8 @@ export const ProfilePage = () => {
     // Simulate API call
     setTimeout(() => {
       setIsSaving(false)
-      alert("PROFILE DATA SAVED SUCCESSFULLY.")
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
     }, 800)
   }
 
@@ -118,10 +120,18 @@ export const ProfilePage = () => {
                   </div>
                 </div>
                 
-                <div className="pt-6 border-t border-primary/20 flex justify-end">
-                  <button type="submit" disabled={isSaving} className="border border-primary bg-primary text-on-primary px-8 py-3 font-mono-technical text-sm font-bold uppercase transition-transform hover:-translate-y-1 hover:shadow-brutal flexItems-center gap-2">
+                <div className="pt-6 border-t border-primary/20 flex flex-col gap-3">
+                  {saveSuccess && (
+                    <div className="border border-green-500 bg-green-50 text-green-700 p-3 font-mono-technical text-xs flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                      PROFILE UPDATED SUCCESSFULLY
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                  <button type="submit" disabled={isSaving} className="border border-primary bg-primary text-on-primary px-8 py-3 font-mono-technical text-sm font-bold uppercase transition-transform hover:-translate-y-1 hover:shadow-brutal flex items-center gap-2">
                     {isSaving ? 'UPDATING...' : <><Save size={16} className="inline mr-2" /> SAVE CHANGES</>}
                   </button>
+                  </div>
                 </div>
               </form>
             </div>

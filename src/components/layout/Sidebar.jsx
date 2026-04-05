@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Activity, User, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Activity, User, LogOut, Home } from 'lucide-react'
 import { useAuth } from '../../features/auth/hooks/useAuth.js'
 import { Logo } from '../common/Logo'
 
@@ -50,6 +50,16 @@ export const Sidebar = () => {
             </Link>
           )
         })}
+
+        {/* Divider + Landing Page link */}
+        <div className="border-t border-primary/20 my-2" />
+        <Link
+          to="/"
+          className="group flex items-center gap-3 px-4 py-3 font-mono-technical text-xs text-primary/60 hover:text-primary hover:bg-surface-container hover:border hover:border-primary transition-all"
+        >
+          <Home size={16} />
+          HOME / LANDING
+        </Link>
       </nav>
 
       {/* Doctor Info & Logout */}

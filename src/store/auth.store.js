@@ -3,6 +3,7 @@ import { create } from 'zustand'
 export const useAuthStore = create((set) => ({
   user: null,
   doctorProfile: null,
+  role: null, // 'doctor' | 'patient' | null
   isAuthenticated: false,
   isLoading: true,
   error: null,
@@ -12,9 +13,9 @@ export const useAuthStore = create((set) => ({
     isAuthenticated: !!session,
   }),
   
-  setDoctorProfile: (profile) => set({
-    doctorProfile: profile,
-  }),
+  setDoctorProfile: (profile) => set({ doctorProfile: profile }),
+
+  setRole: (role) => set({ role }),
 
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),

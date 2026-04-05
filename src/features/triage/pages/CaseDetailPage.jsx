@@ -76,30 +76,30 @@ export const CaseDetailPage = () => {
   }
 
   const handleReviewSubmit = async (feedbackData) => {
+    const newRisk = feedbackData.riskOverride || caseItem.risk_level
+    const updated = {
+      ...caseItem,
+      status: 'reviewed',
+      verified_by_doctor: true,
+      risk_level: newRisk
+    }
+    // 1. Update local state & global store immediately
+    setCaseItem(updated)
+    updateCase(updated)
+
+    // 2. Navigate back NOW — store already has correct state
+    navigate('/dashboard')
+
+    // 3. Write to DB in the background (non-blocking)
     try {
+      await triageService.updateCaseStatus(caseItem.id, 'reviewed')
       await feedbackService.submitFeedback({
         caseId: caseItem.id,
         doctorId: doctorProfile?.id || 'doc-override-01',
         ...feedbackData
       })
-      const updated = {
-        ...caseItem,
-        status: 'reviewed',
-        verified_by_doctor: true,
-        risk_level: feedbackData.riskOverride || caseItem.risk_level
-      }
-      setCaseItem(updated)
-      updateCase(updated) 
     } catch (e) {
-      console.error(e)
-      const updated = {
-        ...caseItem,
-        status: 'reviewed',
-        verified_by_doctor: true,
-        risk_level: feedbackData.riskOverride || caseItem.risk_level
-      }
-      setCaseItem(updated)
-      updateCase(updated)
+      console.warn('Could not persist to DB (mock mode):', e)
     }
   }
 
@@ -116,26 +116,32 @@ export const CaseDetailPage = () => {
   }
 
   const handleUpdateStatus = async (newStatus) => {
+    const updated = {
+      ...caseItem,
+      status: newStatus,
+      risk_level: newStatus === 'admitted' ? 'HIGH' : caseItem.risk_level
+    }
+    // 1. Update store immediately
+    setCaseItem(updated)
+    updateCase(updated)
+
+    // 2. Navigate back NOW
+    navigate('/dashboard')
+
+    // 3. Write to DB in background
     try {
-      const updated = {
-        ...caseItem,
-        status: newStatus,
-        risk_level: newStatus === 'admitted' ? 'HIGH' : caseItem.risk_level
-      }
-      setCaseItem(updated)
-      updateCase(updated)
       await triageService.updateCaseStatus(caseItem.id, newStatus)
     } catch(e) {
-      console.error(e)
+      console.warn('Could not persist status to DB (mock mode):', e)
     }
   }
 
   const p = caseItem.patient_profiles || {} 
 
   return (
-    <div id="case-detail-content" className="flex flex-col h-[calc(100vh-8rem)] bg-surface">
+    <div id="case-detail-content" className="flex flex-col bg-surface mb-12">
       {/* Top Bar */}
-      <div className="flex items-center justify-between border-b border-primary pb-4 mb-6">
+      <div className="flex items-center justify-between border-b border-primary pb-4 mb-6 sticky top-0 bg-surface z-10">
         <div className="flex items-center gap-6">
           <button 
             onClick={() => navigate('/dashboard')}
@@ -178,10 +184,10 @@ export const CaseDetailPage = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row flex-1 gap-8 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 gap-8">
         
         {/* LEFT PANEL : 60% : Patient Context & Transcript */}
-        <div className="md:w-3/5 flex flex-col gap-6 overflow-y-auto no-scrollbar pb-8 pt-1">
+        <div className="md:w-3/5 flex flex-col gap-6 pt-1">
           
           {/* Patient Info Header */}
           <div className="border border-primary bg-surface shadow-[4px_4px_0px_#1A1AFF] flex items-stretch min-h-[140px]">
@@ -267,7 +273,7 @@ export const CaseDetailPage = () => {
         </div>
         
         {/* RIGHT PANEL : 40% : AI Insight & Feedback */}
-        <div className="md:w-2/5 flex flex-col gap-6 overflow-y-auto no-scrollbar pb-8 pt-1 px-1">
+        <div className="md:w-2/5 flex flex-col gap-6 pt-1 px-1">
           
           {/* AI Analysis Card */}
           <div ref={aiCardRef} className="border border-primary bg-surface shadow-[4px_4px_0px_#1A1AFF] p-6 flex flex-col gap-6">

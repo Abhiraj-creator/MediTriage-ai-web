@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Elastic, gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import WebGLRippleImage from '../components/ui/WebGLRippleImage'
-import { easeIn } from 'framer-motion'
+
 import { Logo } from '../components/common/Logo'
+import { useAuth } from '../features/auth/hooks/useAuth.js'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin)
 
 export const LandingPage = () => {
   const containerRef = useRef(null)
   const heroRef = useRef(null)
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 })
   const [isScrolledPastBlue, setIsScrolledPastBlue] = useState(false)
   const page2TextRef = useRef(null)
@@ -199,7 +202,7 @@ export const LandingPage = () => {
           {
             rotation: 270,
             scale: .6, // Scales up dynamically to fill the space
-            ease: easeIn,
+            ease: 'power2.in',
             scrollTrigger: {
               trigger: "#contact", // The footer element
               start: "top bottom", // Starts when top of footer enters bottom of screen
@@ -276,11 +279,22 @@ export const LandingPage = () => {
         
         {/* Right: Actions */}
         <div className="flex items-center gap-6">
-          <Link to="/login" className="hidden md:block insp-font-a text-base md:text-lg hover-underline-animation">SYSTEM LOGIN</Link>
-          <Link to="/register" className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 ${isScrolledPastBlue ? 'border-white text-white hover:bg-white hover:text-[#0a3cce]' : 'border-white text-white hover:bg-white hover:text-[#0b48ed]'}`}>
-             INITIALIZE
-             <i className="ri-arrow-right-line"></i>
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to="/dashboard"
+              className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 bg-white text-[#0a3cce] hover:bg-white/90 border-white font-semibold`}
+            >
+              → GO TO DASHBOARD
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="hidden md:block insp-font-a text-base md:text-lg hover-underline-animation">SYSTEM LOGIN</Link>
+              <Link to="/get-started" className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 ${isScrolledPastBlue ? 'border-white text-white hover:bg-white hover:text-[#0a3cce]' : 'border-white text-white hover:bg-white hover:text-[#0b48ed]'}`}>
+                INITIALIZE
+                <i className="ri-arrow-right-line"></i>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -339,7 +353,7 @@ export const LandingPage = () => {
         className="relative h-[100svh] w-screen overflow-hidden bg-[#0a3cce] blue-section"
       >
         <video 
-          src="https://thisismagma.com/wp-content/themes/magma/assets/home/hero/1.mp4?2" 
+          src="/videos/hero.mp4" 
           autoPlay 
           loop 
           muted 
@@ -356,8 +370,8 @@ export const LandingPage = () => {
                     Deploy real-time AI scoring for emergency workflows <br className="hidden lg:block" />
                     and orchestrate patient data securely.
                 </h4>
-                <Link to="/register" className="flex items-center justify-center rounded-[50px] text-black bg-white border-none insp-font-a font-medium h-[50px] md:h-[60px] px-8 text-sm md:text-lg cursor-pointer hover:bg-gray-200 transition-colors shadow-lg w-fit">
-                  ACCESS SYSTEM
+                <Link to={isAuthenticated ? '/dashboard' : '/get-started'} className="flex items-center justify-center rounded-[50px] text-black bg-white border-none insp-font-a font-medium h-[50px] md:h-[60px] px-8 text-sm md:text-lg cursor-pointer hover:bg-gray-200 transition-colors shadow-lg w-fit">
+                  {isAuthenticated ? '→ OPEN DASHBOARD' : 'ACCESS SYSTEM'}
                 </Link>
             </div>
         </div>
@@ -558,7 +572,7 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* CTA Card  */}
-                <Link to="/register" className="bg-surface-container p-6 md:p-8 flex flex-col justify-center items-center group blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
+                <Link to="/get-started" className="bg-surface-container p-6 md:p-8 flex flex-col justify-center items-center group blog-card min-h-[200px] blog-card-hoverable cursor-pointer">
                     <h4 className="text-lg md:text-xl font-bold uppercase mb-2 animate-text relative z-10 pointer-events-none">Deploy The Blueprint</h4>
                     <svg className="w-10 h-10 group-hover:translate-x-2 transition-transform animate-text relative z-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </Link>

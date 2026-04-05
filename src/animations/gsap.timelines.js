@@ -1,25 +1,21 @@
-export const pulseHighRiskCard = (element) => {
-  if (!element || !window.gsap) return
+import gsap from 'gsap'
 
-  const gsap = window.gsap
-  gsap.fromTo(element, 
+export const pulseHighRiskCard = (element) => {
+  if (!element) return
+  gsap.fromTo(
+    element,
     { boxShadow: '0 0 0px rgba(220, 38, 38, 0)' },
-    { 
-      boxShadow: '0 0 20px rgba(220, 38, 38, 0.6)', 
-      duration: 1.5, 
-      repeat: -1, 
-      yoyo: true, 
-      ease: 'sine.inOut' 
+    {
+      boxShadow: '0 0 20px rgba(220, 38, 38, 0.6)',
+      duration: 1.5,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut'
     }
   )
 }
 
 export const flashScreenEdge = () => {
-  if (!window.gsap) return
-
-  const gsap = window.gsap
-  
-  // Create an overlay element
   const overlay = document.createElement('div')
   overlay.style.position = 'fixed'
   overlay.style.top = '0'
@@ -36,8 +32,6 @@ export const flashScreenEdge = () => {
     duration: 0.2,
     yoyo: true,
     repeat: 3,
-    onComplete: () => {
-      document.body.removeChild(overlay)
-    }
+    onComplete: () => document.body.removeChild(overlay)
   })
 }

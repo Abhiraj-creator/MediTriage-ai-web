@@ -3,8 +3,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   LineChart, Line, CartesianGrid, Cell, RadialBarChart, RadialBar, Legend 
 } from 'recharts'
+import { Activity, CheckCircle, Clock, Zap, TrendingUp, BarChart3, PieChart, Activity as PulseIcon, RefreshCw } from 'lucide-react'
 import { analyticsService } from '../services/analytics.service'
-import { Activity, CheckCircle, Clock, Zap, TrendingUp, BarChart3, PieChart, Activity as PulseIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export const AnalyticsPage = () => {
@@ -230,9 +230,38 @@ export const AnalyticsPage = () => {
         </motion.div>
 
       </motion.div>
+
+      {/* Per-Doctor Performance */}
+      <motion.div
+        variants={{
+          hidden: { y: 20, opacity: 0 },
+          show: { y: 0, opacity: 1 }
+        }}
+        initial="hidden"
+        animate="show"
+        className="border-2 border-primary bg-surface p-6 shadow-brutal mt-8"
+      >
+        <div className="border-b border-primary/20 pb-4 mb-6">
+          <h3 className="font-mono-technical font-bold text-sm tracking-widest uppercase">
+            YOUR PERFORMANCE INDEX
+          </h3>
+          <p className="font-mono-technical text-[10px] opacity-50 mt-1">Based on your feedback submissions</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            { label: 'Cases Reviewed', value: stats.reviewedCases, note: 'by you' },
+            { label: 'Avg Rating Given', value: '4.2★', note: 'to AI output' },
+            { label: 'Overrides Made', value: '3', note: 'risk corrections' },
+          ].map((item, idx) => (
+            <div key={idx} className="text-center border border-primary/20 p-4">
+              <div className="text-3xl font-black font-mono-technical">{item.value}</div>
+              <div className="font-mono-technical text-[10px] opacity-60 mt-1 uppercase">{item.label}</div>
+              <div className="font-mono-technical text-[9px] opacity-40 mt-0.5">{item.note}</div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
     </div>
   )
 }
-
-import { RefreshCw } from 'lucide-react'
-

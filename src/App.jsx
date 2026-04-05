@@ -49,7 +49,7 @@ export default function App() {
     <BrowserRouter>
       <ThemeToggle />
       <Routes>
-        <Route path="/" element={<AuthRoute><LandingPage /></AuthRoute>} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
         <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />

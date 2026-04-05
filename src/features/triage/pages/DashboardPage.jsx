@@ -1,9 +1,9 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { CaseQueue } from '../components/CaseQueue'
 import { Activity, Clock, ShieldAlert, CheckSquare, RefreshCw } from 'lucide-react'
-import { useRealtimeCases } from '../hooks/useRealtimeCases'
 import { useTriageStore } from '../../../store/triage.store'
 import { useAuth } from '../../../features/auth/hooks/useAuth.js'
+import { triageService } from '../services/triage.service.js'
 
 // Brutalist Stat Card
 const StatCard = ({ title, value, icon, color = 'primary' }) => {
@@ -48,19 +48,37 @@ export const DashboardPage = () => {
     return () => clearInterval(timer)
   }, [])
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
-    const { triageService } = await import('../services/triage.service.js')
-    const data = await triageService.getCases()
-    if (data) useTriageStore.getState().setCases(data)
+    try {
+      const data = await triageService.getCases()
+      // Only replace store if we got real DB data (not mock fallback)
+      // Mock data has hardcoded IDs like 'TC-2026-001'
+      if (data && data.length > 0 && !data[0].id?.startsWith('TC-')) {
+        useTriageStore.getState().setCases(data)
+      } else if (data && data.length > 0 && cases.length === 0) {
+        // If store is empty (first load), accept mock data
+        useTriageStore.getState().setCases(data)
+      }
+    } catch (e) {
+      console.warn('Refresh failed, keeping current store state')
+    }
     setTimeout(() => setIsRefreshing(false), 500)
-  }
+  }, [cases.length])
+
+  // Only fetch on initial load (when store is empty)
+  useEffect(() => {
+    if (cases.length === 0) {
+      handleRefresh()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Compute stats from real store data
   const stats = useMemo(() => {
     const total = cases.length
     const highRisk = cases.filter(c => c.risk_level === 'HIGH' && c.status === 'pending').length
-    const reviewed = cases.filter(c => c.status === 'reviewed').length
+    const reviewed = cases.filter(c => c.status !== 'pending').length
     const pending = cases.filter(c => c.status === 'pending').length
     return { total, highRisk, reviewed, pending }
   }, [cases])
