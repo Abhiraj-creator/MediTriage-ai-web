@@ -37,7 +37,7 @@ const StatCard = ({ title, value, icon, color = 'primary' }) => {
 }
 
 export const DashboardPage = () => {
-  const { cases } = useTriageStore()
+  const { cases, isLoading } = useTriageStore()
   const { user, doctorProfile } = useAuth()
 
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -49,37 +49,35 @@ export const DashboardPage = () => {
   }, [])
 
   const handleRefresh = useCallback(async () => {
+    if (!doctorProfile?.id) return
+    
     setIsRefreshing(true)
+    useTriageStore.getState().setLoading(true)
     try {
-      const data = await triageService.getCases()
-      // Only replace store if we got real DB data (not mock fallback)
-      // Mock data has hardcoded IDs like 'TC-2026-001'
-      if (data && data.length > 0 && !data[0].id?.startsWith('TC-')) {
-        useTriageStore.getState().setCases(data)
-      } else if (data && data.length > 0 && cases.length === 0) {
-        // If store is empty (first load), accept mock data
+      const data = await triageService.getCases(doctorProfile.id)
+      if (data) {
         useTriageStore.getState().setCases(data)
       }
     } catch (e) {
-      console.warn('Refresh failed, keeping current store state')
+      console.warn('Refresh failed, keeping current store state', e)
+    } finally {
+      setIsRefreshing(false)
+      useTriageStore.getState().setLoading(false)
     }
-    setTimeout(() => setIsRefreshing(false), 500)
-  }, [cases.length])
+  }, [doctorProfile?.id])
 
-  // Only fetch on initial load (when store is empty)
+  // Fetch on initial mount — always get latest from Supabase when handleRefresh (and its dependent profile) is ready
   useEffect(() => {
-    if (cases.length === 0) {
-      handleRefresh()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    handleRefresh()
+  }, [handleRefresh])
 
   // Compute stats from real store data
   const stats = useMemo(() => {
+    // We want to count across all cases regardless of status for "TOTAL"
     const total = cases.length
-    const highRisk = cases.filter(c => c.risk_level === 'HIGH' && c.status === 'pending').length
-    const reviewed = cases.filter(c => c.status !== 'pending').length
-    const pending = cases.filter(c => c.status === 'pending').length
+    const highRisk = cases.filter(c => c.risk_level === 'HIGH' && (c.status === 'pending' || !c.status)).length
+    const reviewed = cases.filter(c => c.status && c.status !== 'pending').length
+    const pending = cases.filter(c => !c.status || c.status === 'pending').length
     return { total, highRisk, reviewed, pending }
   }, [cases])
 

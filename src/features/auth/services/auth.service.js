@@ -30,24 +30,73 @@ export const authService = {
         password,
       })
       
-      if (error) throw error
+      if (error) {
+        if (error.message.includes('User already registered') || error.code === 'user_already_exists') {
+          return { 
+            success: false, 
+            error: { ...error, isExisting: true, message: 'This email is already registered. Please sign in instead.' } 
+          }
+        }
+        throw error
+      }
 
       if (data?.user?.id) {
-        // Upsert into 'profiles' table (the actual table in Supabase)
         const { error: profileError } = await supabase
           .from(TABLES.PROFILES)
           .upsert([{
-            id: data.user.id,
+            user_id: data.user.id,
             email,
             full_name: profileData?.full_name || profileData?.name || '',
             role: profileData?.role || 'doctor',
-          }])
+            specialization: profileData?.specialization || '',
+          }], { onConflict: 'user_id' })
         if (profileError) console.warn('Profile insert error (non-fatal):', profileError)
       }
 
       return { success: true }
     } catch (error) {
       console.error('Sign up error:', error)
+      return { success: false, error }
+    }
+  },
+
+  async signUpPatient(email, password, profileData) {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+
+      if (data?.user?.id) {
+        // Insert into patient_profiles table
+        const { error: profileError } = await supabase
+          .from('patient_profiles')
+          .upsert([{
+            user_id: data.user.id,
+            full_name: profileData.full_name,
+            age: profileData.age,
+            gender: profileData.gender,
+            known_conditions: profileData.known_conditions || [],
+            smoking: profileData.smoking,
+            alcohol: profileData.alcohol,
+            height_feet: profileData.height_feet,
+            past_heart_attack: profileData.past_heart_attack,
+            past_surgery: profileData.past_surgery,
+          }])
+        if (profileError) console.warn('Patient profile insert error:', profileError)
+
+        // Also insert into profiles table with role=patient for auth routing
+        await supabase
+          .from(TABLES.PROFILES)
+          .upsert([{
+            user_id: data.user.id,
+            email,
+            full_name: profileData.full_name,
+            role: 'patient',
+          }], { onConflict: 'user_id' })
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Patient signup error:', error)
       return { success: false, error }
     }
   },
@@ -71,20 +120,21 @@ export const authService = {
     await supabase.auth.signOut()
     useAuthStore.getState().setSession(null)
     useAuthStore.getState().setDoctorProfile(null)
+    useAuthStore.getState().setRole(null)
   },
 
-  // Fetches from 'profiles' table — the actual schema in Supabase
+  // Fetches from 'profiles' table and sets role for route guards
   async fetchDoctorProfile(userId) {
     try {
       const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No profile row yet — use session email as fallback display name
+          // No profile row yet
           console.warn('No profile found for user, using session fallback.')
           const { data: sessionData } = await supabase.auth.getSession()
           const email = sessionData?.session?.user?.email || 'Doctor'
@@ -96,12 +146,15 @@ export const authService = {
             specialization: sessionData?.session?.user?.user_metadata?.specialization || '',
             needsOnboarding: true,
           })
+          useAuthStore.getState().setRole('doctor')
           return
         }
         throw error
       }
 
       useAuthStore.getState().setDoctorProfile(data)
+      // Set role in store for PatientRoute / ProtectedRoute guards
+      useAuthStore.getState().setRole(data.role || 'doctor')
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -132,9 +185,10 @@ export const authService = {
       const { error } = await supabase
         .from(TABLES.PROFILES)
         .upsert([{
-          id: userId,
+          user_id: userId,
           ...profileData
-        }])
+        }], { onConflict: 'user_id' })
+      
       if (error) throw error
       
       await this.fetchDoctorProfile(userId)

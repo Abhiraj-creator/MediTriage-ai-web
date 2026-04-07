@@ -175,7 +175,7 @@ export const Header = () => {
                    onClick={handleLogout}
                    className="flex items-center gap-3 px-3 py-2 hover:bg-red-500 hover:text-white transition-colors text-sm font-mono-technical uppercase text-left text-red-600 w-full"
                  >
-                   <LogOut size={14} /> Terminate Session
+                   <LogOut size={14} /> LOGOUT
                  </button>
                </div>
             </div>

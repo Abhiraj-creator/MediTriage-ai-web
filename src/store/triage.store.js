@@ -8,7 +8,16 @@ export const useTriageStore = create((set, get) => ({
   error: null,
   connectionStatus: 'DISCONNECTED', // 'SUBSCRIBED' | 'DISCONNECTED' | 'RECONNECTING'
 
-  setCases: (cases) => set({ cases }),
+  setCases: (newCases) => set((state) => {
+    const merged = newCases.map(incomingCase => {
+      const existingCase = state.cases.find(c => c.id === incomingCase.id)
+      if (existingCase && incomingCase.status === 'pending' && existingCase.status !== 'pending') {
+        return { ...incomingCase, status: existingCase.status, risk_level: existingCase.risk_level }
+      }
+      return incomingCase
+    })
+    return { cases: merged }
+  }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   
   addCase: (newCase) => set((state) => {

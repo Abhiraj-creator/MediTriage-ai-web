@@ -220,12 +220,11 @@ export const LandingPage = () => {
     }
   }, [])
 
-  // Smooth scroll handler using GSAP
   const scrollToSection = (e, id) => {
     e.preventDefault()
     gsap.to(window, { 
       duration: 1.2, 
-      // scrollTo: { y: id, offsetY: 50 }, 
+      scrollTo: { y: id, offsetY: 50 }, 
       ease: "power4.inOut" 
     })
   }
@@ -353,7 +352,7 @@ export const LandingPage = () => {
         className="relative h-[100svh] w-screen overflow-hidden bg-[#0a3cce] blue-section"
       >
         <video 
-          src="/videos/hero.mp4" 
+          src="https://thisismagma.com/wp-content/themes/magma/assets/home/hero/1.mp4?2" 
           autoPlay 
           loop 
           muted 

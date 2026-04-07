@@ -19,8 +19,8 @@ export const ProfilePage = () => {
     name: fullName,
     specialization: specialization,
     email: email,
-    hospital: 'Central General Hospital',
-    license: 'MED-894-32A',
+    hospital: doctorProfile?.hospital_name || 'Central General Hospital',
+    city: doctorProfile?.city || '',
     notificationsEnabled: true,
     highRiskAlerts: true,
   })
@@ -30,15 +30,25 @@ export const ProfilePage = () => {
     setFormData({ ...formData, [e.target.name]: value })
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
+    if (!user?.id) return
+    
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
+    const result = await authService.updateProfile(user.id, {
+      full_name: formData.name,
+      specialization: formData.specialization,
+      hospital_name: formData.hospital,
+      city: formData.city
+    })
+
+    setIsSaving(false)
+    if (result.success) {
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
-    }, 800)
+    } else {
+      alert("Failed to save profile: " + (result.error?.message || "Unknown error"))
+    }
   }
 
   const initials = fullName.substring(0, 2).toUpperCase()
@@ -110,13 +120,14 @@ export const ProfilePage = () => {
                     <label className="font-mono-technical text-[10px] uppercase block opacity-80">Specialization</label>
                     <input type="text" name="specialization" value={formData.specialization} onChange={handleChange} className="w-full bg-surface-container border border-primary p-3 font-mono-technical text-sm outline-none focus:bg-white" />
                   </div>
+
                   <div className="space-y-2">
-                    <label className="font-mono-technical text-[10px] uppercase block opacity-80">Medical License</label>
-                    <input type="text" name="license" value={formData.license} onChange={handleChange} className="w-full bg-surface-container border border-primary p-3 font-mono-technical text-sm outline-none focus:bg-white" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
                     <label className="font-mono-technical text-[10px] uppercase block opacity-80">Primary Affiliation</label>
                     <input type="text" name="hospital" value={formData.hospital} onChange={handleChange} className="w-full bg-surface-container border border-primary p-3 font-mono-technical text-sm outline-none focus:bg-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-mono-technical text-[10px] uppercase block opacity-80">City</label>
+                    <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-surface-container border border-primary p-3 font-mono-technical text-sm outline-none focus:bg-white" />
                   </div>
                 </div>
                 

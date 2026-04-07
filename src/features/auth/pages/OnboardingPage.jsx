@@ -4,12 +4,12 @@ import { useAuthStore } from '../../../store/auth.store'
 import { authService } from '../services/auth.service'
 
 export const OnboardingPage = () => {
-  const { doctorProfile, session } = useAuthStore()
+  const { doctorProfile, user } = useAuthStore()
   const [fullName, setFullName] = useState('')
   const [specialization, setSpecialization] = useState('')
-  const [license, setLicense] = useState('')
   const [experience, setExperience] = useState('')
   const [hospital, setHospital] = useState('')
+  const [city, setCity] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -24,19 +24,24 @@ export const OnboardingPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!session?.user?.id) return
+    if (!user?.id) return
     
     setLoading(true)
-    await authService.updateProfile(session.user.id, {
+    const result = await authService.updateProfile(user.id, {
       full_name: fullName,
       specialization: specialization,
       role: 'doctor',
-      medical_reg_number: license,
       years_experience: parseInt(experience) || 0,
-      hospital_name: hospital
+      hospital_name: hospital,
+      city: city
     })
     setLoading(false)
-    navigate('/dashboard')
+    
+    if (result.success) {
+      navigate('/dashboard')
+    } else {
+      alert("Failed to save profile: " + (result.error?.message || "Unknown error"))
+    }
   }
 
   return (
@@ -90,17 +95,7 @@ export const OnboardingPage = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="font-mono-technical text-xs block uppercase">Medical License Number</label>
-              <input
-                type="text"
-                value={license}
-                onChange={(e) => setLicense(e.target.value)}
-                placeholder="Ex: MED-894-32A"
-                className="w-full bg-surface-container border border-primary p-4 outline-none focus:bg-white transition-colors font-mono-technical text-sm placeholder:text-primary/40 focus:shadow-brutal"
-                required
-              />
-            </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -122,6 +117,18 @@ export const OnboardingPage = () => {
                   value={hospital}
                   onChange={(e) => setHospital(e.target.value)}
                   placeholder="Central General Hospital"
+                  className="w-full bg-surface-container border border-primary p-4 outline-none focus:bg-white transition-colors font-mono-technical text-sm placeholder:text-primary/40 focus:shadow-brutal"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-mono-technical text-xs block uppercase">City</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Ex: Mumbai"
                   className="w-full bg-surface-container border border-primary p-4 outline-none focus:bg-white transition-colors font-mono-technical text-sm placeholder:text-primary/40 focus:shadow-brutal"
                   required
                 />
