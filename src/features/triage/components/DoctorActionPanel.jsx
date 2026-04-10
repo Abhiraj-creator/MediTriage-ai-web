@@ -5,11 +5,16 @@ import { whatsappService } from '../services/whatsapp.service'
 import { triageService } from '../services/triage.service'
 import { supabase } from '../../../config/supabase'
 
-export const DoctorActionPanel = ({ caseItem, doctorProfile, onCaseUpdate }) => {
+export const DoctorActionPanel = ({ caseItem, doctorProfile, initialPanel, onCaseUpdate }) => {
   const [activePanel, setActivePanel] = useState(null) // 'approve' | 'appointment' | null
   const [doctorNote, setDoctorNote] = useState(caseItem.ai_recommendation || '')
   const [isSending, setIsSending] = useState(false)
   const [sent, setSent] = useState(null) // 'approved' | 'appointment'
+
+  // Sync with top bar buttons
+  useEffect(() => {
+    if (initialPanel) setActivePanel(initialPanel)
+  }, [initialPanel])
 
   // Appointment state
   const [appointmentDate, setAppointmentDate] = useState('')

@@ -1,4 +1,3 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeToggle } from './components/layout/ThemeToggle'
 import { AppLayout } from './components/layout/AppLayout'
 import { DashboardPage } from './features/triage/pages/DashboardPage'
@@ -14,6 +13,8 @@ import { UserTypePage } from './features/auth/pages/UserTypePage'
 import { PatientDashboardPage } from './features/patient/pages/PatientDashboardPage'
 import { PatientTriagePage } from './features/patient/pages/PatientTriagePage'
 import { useAuth } from './features/auth/hooks/useAuth.js'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading, doctorProfile } = useAuth()
@@ -73,7 +74,6 @@ const AuthRoute = ({ children }) => {
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeToggle />
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />

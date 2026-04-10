@@ -85,13 +85,13 @@ export const AnalyticsPage = () => {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12"
       >
          {[
            { label: 'Total Input', value: stats.totalCases, icon: Activity, color: 'text-primary' },
            { label: 'Reviewed', value: stats.reviewedCases, icon: CheckCircle, color: 'text-green-600' },
            { label: 'Pending', value: stats.pendingCases, icon: Clock, color: 'text-orange-600' },
-           { label: 'Efficiency', value: `${stats.throughput}%`, icon: Zap, color: 'text-yellow-500' }
+           { label: 'Time Saved', value: `${Math.round((stats.reviewedCases * 2) / 60)}h ${ (stats.reviewedCases * 2) % 60}m`, icon: Zap, color: 'text-yellow-500' }
          ].map((kpi, idx) => (
            <motion.div key={idx} variants={itemVariants} className="border border-primary p-6 bg-surface shadow-[6px_6px_0px_#1A1AFF]">
              <span className="block font-mono-technical text-[10px] opacity-60 mb-3 font-bold uppercase tracking-wider">{kpi.label}</span>
@@ -111,7 +111,7 @@ export const AnalyticsPage = () => {
       >
         
         {/* 1. Hourly Activity (Line Chart) */}
-        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-6 shadow-brutal flex flex-col h-[480px]">
+        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-4 md:p-6 shadow-brutal flex flex-col h-[320px] sm:h-[400px] md:h-[480px]">
           <div className="flex justify-between items-center border-b border-primary/20 pb-4 mb-4">
              <div className="flex items-center gap-2">
                 <PulseIcon size={16} className="text-primary" />
@@ -145,7 +145,7 @@ export const AnalyticsPage = () => {
         </motion.div>
 
         {/* 2. Risk Distribution (Horizontal Bar Chart) */}
-        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-6 shadow-brutal flex flex-col h-[480px]">
+        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-4 md:p-6 shadow-brutal flex flex-col h-[320px] sm:h-[400px] md:h-[480px]">
           <div className="flex justify-between items-center border-b border-primary/20 pb-4 mb-4">
              <div className="flex items-center gap-2">
                 <BarChart3 size={16} className="text-primary" />
@@ -177,7 +177,7 @@ export const AnalyticsPage = () => {
         </motion.div>
 
         {/* 3. Symptom Frequency (Horizontal Bar Chart) */}
-        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-6 shadow-brutal flex flex-col h-[480px]">
+        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-4 md:p-6 shadow-brutal flex flex-col h-[320px] sm:h-[400px] md:h-[480px]">
           <div className="flex justify-between items-center border-b border-primary/20 pb-4 mb-4">
              <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-primary" />
@@ -198,7 +198,7 @@ export const AnalyticsPage = () => {
         </motion.div>
 
         {/* 4. Feedback Distribution (Radial Bar Chart) */}
-        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-6 shadow-brutal flex flex-col h-[480px]">
+        <motion.div variants={itemVariants} className="border-2 border-primary bg-surface p-4 md:p-6 shadow-brutal flex flex-col h-[320px] sm:h-[400px] md:h-[480px]">
           <div className="flex justify-between items-center border-b border-primary/20 pb-4 mb-4">
              <div className="flex items-center gap-2">
                 <PieChart size={16} className="text-primary" />

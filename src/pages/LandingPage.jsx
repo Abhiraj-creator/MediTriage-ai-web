@@ -25,6 +25,8 @@ export const LandingPage = () => {
   const [activeAccordion, setActiveAccordion] = useState(null)
 
   const footerLogoRef = useRef(null)
+  const pipelineCardsRef = useRef(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -131,15 +133,37 @@ export const LandingPage = () => {
         clearProps: "transform"
       })
 
-      // PIPELINE SECTION: Stacking Cards Animation
-      // Pin the left side title ONLY
-      ScrollTrigger.create({
-        trigger: ".left-pin-container",
-        start: "top top+=150", // Start pinning when it reaches near the top
-        endTrigger: "#pipeline",
-        end: "bottom bottom", // Unpin when the entire section is scrolled past
-        pin: true,
-        pinSpacing: false,
+      // MatchMedia for responsive Pipeline logic
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 1025px)", () => {
+        // Desktop - Pin side title
+        ScrollTrigger.create({
+          trigger: ".left-pin-container",
+          start: "top top+=150", 
+          endTrigger: "#pipeline",
+          end: "bottom bottom", 
+          pin: true,
+          pinSpacing: false,
+        });
+      });
+
+      mm.add("(max-width: 1024px)", () => {
+        if (pipelineCardsRef.current) {
+          const cards = pipelineCardsRef.current;
+          gsap.to(cards, {
+            x: () => -(cards.scrollWidth - window.innerWidth + 40),
+            ease: "none",
+            scrollTrigger: {
+              trigger: "#pipeline-mobile-pin-wrapper",
+              pin: true,
+              scrub: 1,
+              start: "top 15%", 
+              end: () => `+=${cards.scrollWidth}`,
+              invalidateOnRefresh: true,
+            }
+          });
+        }
       });
 
       // Awwwards Style Cursor Follower for Capabilities
@@ -201,12 +225,12 @@ export const LandingPage = () => {
           },
           {
             rotation: 270,
-            scale: .6, // Scales up dynamically to fill the space
+            scale: window.innerWidth < 768 ? 0.35 : 0.6, // Scale down more on mobile
             ease: 'power2.in',
             scrollTrigger: {
-              trigger: "#contact", // The footer element
-              start: "top bottom", // Starts when top of footer enters bottom of screen
-              end: "bottom bottom", // Reaches full scale when footer is fully visible
+              trigger: "#contact", 
+              start: "top bottom", 
+              end: "bottom bottom", 
               scrub: 1 
             }
           }
@@ -261,10 +285,26 @@ export const LandingPage = () => {
         .reveal { opacity: 0; transform: translateY(30px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Mobile Menu Animation */
+        .mobile-menu-enter { transform: translateY(-100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .mobile-menu-enter-active { transform: translateY(0); }
+        
+        /* Pipeline Mobile Fix */
+        .pipeline-cards-flex { display: flex; flex-direction: column; }
+        @media (max-width: 1024px) {
+            .pipeline-cards-flex { 
+              flex-direction: row !important; 
+              gap: 2rem !important; 
+              width: max-content !important; 
+              padding-right: 2rem;
+            }
+            .pipeline-card { flex-shrink: 0; width: 85vw; }
+        }
       `}</style>
 
       {/* 1. Unified TopNavBar */}
-      <nav className={`fixed top-0 left-0 w-full h-[12vh] px-6 md:px-12 flex items-center justify-between z-50 pointer-events-auto transition-all duration-300 ${isScrolledPastBlue ? 'bg-[#0a3cce]/70 backdrop-blur-md shadow-md text-white' : 'bg-transparent text-white'}`}>
+      <nav className={`fixed top-0 left-0 w-full h-[12vh] px-6 md:px-12 flex items-center justify-between z-[100] pointer-events-auto transition-all duration-300 ${isScrolledPastBlue || isMobileMenuOpen ? 'bg-[#0a3cce]/90 backdrop-blur-md shadow-md text-white border-b border-white/10' : 'bg-transparent text-white'}`}>
         {/* Left: Logo */}
         <div className="flex items-center">
           <Logo className={`w-10 h-10 md:w-12 md:h-12 transition-all duration-300 ${isScrolledPastBlue ? 'filter-none opacity-100' : 'filter opacity-90'}`} pathClassName="fill-white" />
@@ -277,23 +317,47 @@ export const LandingPage = () => {
         </div>
         
         {/* Right: Actions */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 bg-white text-[#0a3cce] hover:bg-white/90 border-white font-semibold`}
+              className={`hidden sm:flex items-center gap-2 insp-font-a text-sm md:text-lg border px-4 md:px-6 py-2 rounded-full transition-colors duration-300 bg-white text-[#0a3cce] hover:bg-white/90 border-white font-semibold`}
             >
-              → GO TO DASHBOARD
+              → DASHBOARD
             </Link>
           ) : (
             <>
-              <Link to="/login" className="hidden md:block insp-font-a text-base md:text-lg hover-underline-animation">SYSTEM LOGIN</Link>
-              <Link to="/get-started" className={`flex items-center gap-2 insp-font-a text-base md:text-lg border px-6 py-2.5 rounded-full transition-colors duration-300 ${isScrolledPastBlue ? 'border-white text-white hover:bg-white hover:text-[#0a3cce]' : 'border-white text-white hover:bg-white hover:text-[#0b48ed]'}`}>
-                INITIALIZE
+              <Link to="/login" className="hidden lg:block insp-font-a text-base md:text-lg hover-underline-animation font-light">SYSTEM LOGIN</Link>
+              <Link to="/get-started" className={`flex items-center gap-2 insp-font-a text-sm md:text-lg border px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 ${isScrolledPastBlue || isMobileMenuOpen ? 'border-white text-white hover:bg-white hover:text-[#0a3cce]' : 'border-white text-white hover:bg-white hover:text-[#0b48ed]'}`}>
+                {isAuthenticated ? 'OPEN APP' : 'INITIALIZE'}
                 <i className="ri-arrow-right-line"></i>
               </Link>
             </>
           )}
+          
+          {/* Mobile Toggle */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 text-white transition-transform active:scale-90"
+          >
+            <i className={`ri-${isMobileMenuOpen ? 'close-line' : 'menu-4-line'} text-3xl`}></i>
+          </button>
+        </div>
+
+        {/* Mobile Flyout Menu */}
+        <div className={`absolute top-[12vh] left-0 w-full bg-[#0a3cce] border-b border-white/10 px-8 py-10 flex flex-col gap-8 transition-all duration-500 transform lg:hidden ${isMobileMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-10 opacity-0 invisible pointer-events-none'}`}>
+           <a className="insp-font-a text-3xl text-white font-light tracking-tight" href="#pipeline" onClick={(e) => { setIsMobileMenuOpen(false); scrollToSection(e, "#pipeline"); }}>// PIPELINE</a>
+           <a className="insp-font-a text-3xl text-white font-light tracking-tight" href="#capabilities" onClick={(e) => { setIsMobileMenuOpen(false); scrollToSection(e, "#capabilities"); }}>// CAPABILITIES</a>
+           <a className="insp-font-a text-3xl text-white font-light tracking-tight" href="#contact" onClick={(e) => { setIsMobileMenuOpen(false); scrollToSection(e, "#contact"); }}>// SYSTEM CONTACT</a>
+           
+           {!isAuthenticated && (
+             <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="insp-font-a text-3xl text-white font-light tracking-tight">// SYSTEM LOGIN</Link>
+           )}
+
+           <div className="mt-8 pt-8 border-t border-white/20">
+              <p className="font-mono-technical text-[10px] opacity-50 tracking-[0.2em] mb-4 uppercase">System Status: Active</p>
+              <p className="font-mono-technical text-[10px] opacity-30">©2026 MEDITRIAGE CORE INC.</p>
+           </div>
         </div>
       </nav>
 
@@ -357,20 +421,20 @@ export const LandingPage = () => {
           loop 
           muted 
           playsInline 
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover object-[60%_50%] md:object-center"
         />
         
-        <div className="absolute bottom-[10%] left-[10%] z-10">
-            <h1 className="text-[6vw] lg:text-[5vw] text-white insp-font-a leading-[1.1] lg:leading-[80px] m-0 p-0 font-light drop-shadow-md">
+        <div className="absolute bottom-[12%] md:bottom-[10%] left-[8%] md:left-[10%] z-10 w-[84%] md:w-auto">
+            <h1 className="hero-title text-4xl xs:text-5xl sm:text-6xl md:text-[6vw] lg:text-[5vw] text-white insp-font-a leading-[1.1] md:leading-[1.1] lg:leading-[80px] m-0 p-0 font-light drop-shadow-lg">
                Expedite Clinical <br /> Intake Decisions
             </h1>
-            <div className="flex flex-col lg:flex-row gap-[30px] mt-[40px] lg:items-center">
-                <h4 className="text-[17px] lg:text-[19px] text-white insp-font-c leading-[1.4] lg:leading-[30px] m-0 p-0 font-light max-w-xl">
+            <div className="flex flex-col lg:flex-row gap-4 md:gap-[30px] mt-6 md:mt-[40px] lg:items-center">
+                <h4 className="hero-sub text-sm xs:text-base sm:text-lg lg:text-[19px] text-white/90 insp-font-c leading-relaxed md:leading-[1.4] lg:leading-[30px] m-0 p-0 font-light max-w-xl">
                     Deploy real-time AI scoring for emergency workflows <br className="hidden lg:block" />
                     and orchestrate patient data securely.
                 </h4>
-                <Link to={isAuthenticated ? '/dashboard' : '/get-started'} className="flex items-center justify-center rounded-[50px] text-black bg-white border-none insp-font-a font-medium h-[50px] md:h-[60px] px-8 text-sm md:text-lg cursor-pointer hover:bg-gray-200 transition-colors shadow-lg w-fit">
-                  {isAuthenticated ? '→ OPEN DASHBOARD' : 'ACCESS SYSTEM'}
+                <Link to={isAuthenticated ? '/dashboard' : '/get-started'} className="mt-4 lg:mt-0 flex items-center justify-center rounded-[50px] text-black bg-white border-none insp-font-a font-medium h-[48px] xs:h-[54px] md:h-[60px] px-8 text-sm xs:text-base md:text-lg cursor-pointer hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 shadow-xl w-fit">
+                  {isAuthenticated ? '→ DASHBOARD' : 'ACCESS SYSTEM'}
                 </Link>
             </div>
         </div>
@@ -395,21 +459,26 @@ export const LandingPage = () => {
       <section id="pipeline" className="bg-surface-container py-20 md:py-32 px-4 md:px-6 relative">
         <div className="grid-blueprint max-w-screen-2xl mx-auto">
             <div className="col-span-3 md:col-span-1 vertical-divider md:pr-8 left-pin-container relative">
-                <div>
-                    <h2 className="text-5xl md:text-7xl font-black leading-[0.9] uppercase reveal">
+                <div className="md:block">
+                    <h2 className="text-4xl xs:text-5xl md:text-7xl font-black leading-[0.9] uppercase reveal">
                         Here<br/>at every<br/>step
                     </h2>
-                    <div className="mt-8 md:mt-12 reveal">
-                        <div className="wavy-line opacity-30 mb-8"></div>
-                        <p className="font-mono-technical text-sm">PHASE 01 — PHASE 04</p>
+                    <div className="mt-4 md:mt-12 reveal">
+                        <div className="wavy-line opacity-30 mb-4 md:mb-8"></div>
+                        <p className="font-mono-technical text-xs md:text-sm">PHASE 01 — PHASE 04</p>
                     </div>
                 </div>
             </div>
             
-            <div className="col-span-3 md:col-span-2 md:pl-12 py-8 md:py-12 space-y-16 relative z-10">
+            <div className="col-span-3 md:col-span-2 md:pl-12 py-8 md:py-12 space-y-16 lg:space-y-16 relative z-10 overflow-visible lg:overflow-visible">
+                <div id="pipeline-mobile-pin-wrapper" className="w-full overflow-visible pt-[15vh] lg:pt-0">
+                    <div 
+                      ref={pipelineCardsRef}
+                      className="pipeline-cards-flex h-auto lg:h-auto"
+                    >
                 {/* Step 1 */}
-                <div className="flex justify-start pipeline-card reveal z-[1] relative">
-                    <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
+                <div className="flex justify-start pipeline-card reveal z-[1] relative shrink-0 w-[85vw] lg:w-full">
+                    <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full lg:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">01</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Initial Data Intake</h4>
                         <p className="text-sm opacity-80 font-mono-technical">Comprehensive NLP processing of raw patient symptom descriptions before physical assessment.</p>
@@ -417,8 +486,8 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 2 */}
-                <div className="flex justify-end pipeline-card reveal z-[2] relative">
-                    <div className="tilt-2 bg-primary text-on-primary border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[-4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
+                <div className="flex justify-end pipeline-card reveal z-[2] relative shrink-0 w-[85vw] lg:w-full">
+                    <div className="tilt-2 bg-primary text-on-primary border border-primary p-6 md:p-8 w-full lg:max-w-[80%] shadow-[-4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-surface pb-2">02</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Algorithmic Scoring</h4>
                         <p className="text-sm opacity-80 font-mono-technical">Developing a tactical risk stratification matrix (ESI 1-5), ensuring zero friction with existing EMRs.</p>
@@ -426,8 +495,8 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 3 */}
-                <div className="flex justify-start pipeline-card reveal z-[3] relative">
-                    <div className="tilt-3 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
+                <div className="flex justify-start pipeline-card reveal z-[3] relative shrink-0 w-[85vw] lg:w-full">
+                    <div className="tilt-3 bg-surface border border-primary p-6 md:p-8 w-full lg:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">03</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Realtime Websockets</h4>
                         <p className="text-sm opacity-80 font-mono-technical">Direct asynchronous push to the physician command center layout. Zero refreshing required.</p>
@@ -435,14 +504,16 @@ export const LandingPage = () => {
                 </div>
                 
                 {/* Step 4 */}
-                <div className="flex justify-end pipeline-card reveal z-[4] relative">
-                    <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full md:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
+                <div className="flex justify-end pipeline-card reveal z-[4] relative shrink-0 w-[85vw] lg:w-full pr-8">
+                    <div className="tilt-1 bg-surface border border-primary p-6 md:p-8 w-full lg:max-w-[80%] shadow-[4px_4px_0px_#1A1AFF] transition-transform hover:rotate-0">
                         <span className="font-mono-technical text-3xl md:text-4xl block mb-4 border-b border-primary pb-2">04</span>
                         <h4 className="text-lg md:text-xl font-bold mb-2 uppercase">Physician Override</h4>
                         <p className="text-sm opacity-80 font-mono-technical">Securing the final human-in-the-loop sign off and routing the patient to the correct trauma bay.</p>
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
         </div>
       </section>
 
@@ -471,10 +542,10 @@ export const LandingPage = () => {
                         <div key={idx} className="border-b border-primary bg-surface transition-colors duration-300 group">
                           {/* Header Row */}
                           <div 
-                            onMouseEnter={() => { setActiveHoverImg(feature.img); }}
-                            onMouseLeave={() => { setActiveHoverImg(""); }}
+                            onMouseEnter={() => { if(window.innerWidth > 1024) setActiveHoverImg(feature.img); }}
+                            onMouseLeave={() => { if(window.innerWidth > 1024) setActiveHoverImg(""); }}
                             onClick={() => setActiveAccordion(isActive ? null : idx)}
-                            className={`py-6 md:py-8 flex justify-between items-center px-2 md:px-6 service-item cursor-pointer transition-colors ${isActive ? 'bg-primary text-on-primary' : 'hover:bg-primary hover:text-on-primary'}`}
+                            className={`py-6 md:py-8 flex justify-between items-center px-2 md:px-6 service-item cursor-pointer transition-all duration-500 ${isActive ? 'bg-primary text-on-primary' : 'hover:bg-primary hover:text-on-primary'}`}
                           >
                               <div className="flex items-center gap-6 md:gap-12 service-hover-translate">
                                   <span className="font-mono-technical text-[10px] md:text-xs">
@@ -491,8 +562,8 @@ export const LandingPage = () => {
                           
                           {/* Expanded Content */}
                           <div 
-                            className={`overflow-hidden transition-all duration-500 ease-in-out`}
-                            style={{ maxHeight: isActive ? '800px' : '0px', opacity: isActive ? 1 : 0 }}
+                            className={`overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+                            style={{ maxHeight: isActive ? '1200px' : '0px', opacity: isActive ? 1 : 0 }}
                           >
                             <div className="p-6 md:p-12 flex flex-col md:flex-row gap-8 bg-surface-container border-t border-primary">
                                <div className="w-full md:w-1/2 h-[300px] md:h-[400px] border border-primary overflow-hidden relative">
@@ -581,8 +652,8 @@ export const LandingPage = () => {
 
       {/* 8. Footer Section */}
       <footer id="contact" className="bg-primary text-surface-container min-h-[600px] md:min-h-[716px] relative flex md:items-center py-20 px-4 md:px-6 section-reveal border-t border-primary overflow-hidden">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden md:flex items-center z-0 w-[450px] lg:w-[750px] h-[450px] lg:h-[750px] overflow-visible" style={{ transform: 'translateX(-25%)' }}>
-            <div ref={footerLogoRef} className="origin-center w-full h-full flex items-center justify-center ml-[8vw] mt-[-20vh]">
+        <div className="absolute left-0 top-[10%] md:top-1/2 md:-translate-y-1/2 pointer-events-none flex items-center z-0 w-[400px] md:w-[450px] lg:w-[750px] h-[400px] md:h-[450px] lg:h-[750px] overflow-visible" style={{ transform: 'translateX(-25%)' }}>
+            <div ref={footerLogoRef} className="origin-center w-full h-full flex items-center justify-center ml-[5vw] md:ml-[8vw] mt-0 md:mt-[-20vh]">
                <Logo className="w-full h-full opacity-90 mix-blend-overlay" pathClassName="fill-white" />
             </div>
         </div>

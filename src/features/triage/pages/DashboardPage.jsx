@@ -4,6 +4,9 @@ import { Activity, Clock, ShieldAlert, CheckSquare, RefreshCw } from 'lucide-rea
 import { useTriageStore } from '../../../store/triage.store'
 import { useAuth } from '../../../features/auth/hooks/useAuth.js'
 import { triageService } from '../services/triage.service.js'
+import { AnalyticsPanel } from '../../dashboard/components/AnalyticsPanel'
+import { supabase } from '../../../config/supabase.js'
+
 
 // Brutalist Stat Card
 const StatCard = ({ title, value, icon, color = 'primary' }) => {
@@ -71,6 +74,26 @@ export const DashboardPage = () => {
     handleRefresh()
   }, [handleRefresh])
 
+  // Real-time listener for incoming triage cases
+  useEffect(() => {
+    if (!doctorProfile?.id) return
+
+    const subscription = triageService.subscribeToCases(doctorProfile.id, (payload, type) => {
+      const store = useTriageStore.getState()
+      if (type === 'INSERT') {
+        store.addCase(payload)
+      } else if (type === 'UPDATE') {
+        store.updateCase(payload)
+      } else if (type === 'DELETE') {
+        store.removeCase(payload.id)
+      }
+    })
+
+    return () => {
+      if (subscription) supabase.removeChannel(subscription)
+    }
+  }, [doctorProfile?.id])
+
   // Compute stats from real store data
   const stats = useMemo(() => {
     // We want to count across all cases regardless of status for "TOTAL"
@@ -134,25 +157,22 @@ export const DashboardPage = () => {
           </div>
         )}
 
-        <div className="mt-6 md:mt-0 flex items-center gap-4 flex-col md:flex-row absolute top-0 right-0 md:relative w-full md:w-auto justify-end">
+        <div className="mt-8 md:mt-0 flex items-center gap-2 md:gap-4 flex-row md:flex-row w-full md:w-auto justify-start md:justify-end border-t md:border-t-0 border-primary/10 pt-6 md:pt-0">
           <button 
             onClick={handleRefresh}
-            className="font-mono-technical text-xs border border-primary px-3 py-2 hover:bg-primary hover:text-on-primary transition-colors flex items-center gap-2 bg-surface z-10"
+            className="font-mono-technical text-[10px] md:text-xs border border-primary px-3 py-2 hover:bg-primary hover:text-on-primary transition-colors flex items-center gap-2 bg-surface z-10 shrink-0"
           >
             <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> REFRESH
           </button>
-          <div className="font-mono-technical text-xs border border-primary px-4 py-2 bg-on-primary z-10">
+          <div className="font-mono-technical text-[10px] md:text-xs border border-primary px-4 py-2 bg-on-primary z-10 whitespace-nowrap overflow-hidden text-ellipsis">
             SESSION: {displayTime}
           </div>
         </div>
       </div>
 
-      {/* Grid Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-        <StatCard title="TOTAL CASES" value={stats.total} icon={<Activity />} />
-        <StatCard title="HIGH RISK" value={stats.highRisk} icon={<ShieldAlert />} color="red" />
-        <StatCard title="REVIEWED" value={stats.reviewed} icon={<CheckSquare />} color="green" />
-        <StatCard title="PENDING" value={stats.pending} icon={<Clock />} />
+      {/* Grid Stats — Replaced with Advanced Analytics Panel */}
+      <div className="mb-16">
+        <AnalyticsPanel cases={cases} />
       </div>
 
       {/* Case Queue Section */}

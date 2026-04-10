@@ -106,4 +106,35 @@ export const triageService = {
 
     return data
   },
+
+  // Real-time subscription for a specific doctor's patients
+  subscribeToCases(doctorId, onUpdate) {
+    if (!doctorId) return null
+
+    return supabase
+      .channel('doctor-dashboard-' + doctorId)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: TABLES.TRIAGE_CASES,
+          filter: `doctor_id=eq.${doctorId}`,
+        },
+        async (payload) => {
+          console.log('Real-time case update received:', payload)
+          
+          if (payload.eventType === 'INSERT') {
+            // For insertions, we want the full joined patient profile
+            const newCase = await this.getCaseById(payload.new.id)
+            if (newCase) onUpdate(newCase, 'INSERT')
+          } else if (payload.eventType === 'UPDATE') {
+            onUpdate(payload.new, 'UPDATE')
+          } else if (payload.eventType === 'DELETE') {
+            onUpdate(payload.old, 'DELETE')
+          }
+        }
+      )
+      .subscribe()
+  },
 }

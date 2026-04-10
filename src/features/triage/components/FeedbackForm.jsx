@@ -58,7 +58,7 @@ export const FeedbackForm = ({ caseId, status, onSubmit }) => {
                      type="button"
                      whileHover={{ scale: 1.15 }}
                      whileTap={{ scale: 0.95 }}
-                     onMouseEnter={() => setHoverRating(star)}
+                     onMouseEnter={() => setHoverRating(star)}www
                      onClick={() => setRating(star)}
                      className="focus:outline-none"
                    >

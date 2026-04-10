@@ -70,14 +70,14 @@ export const CaseCard = ({ caseData, onClick }) => {
         </div>
       </div>
 
-      <div className="flex flex-row md:flex-row items-center md:items-center justify-end gap-10 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-primary/20 md:border-0 pl-0 md:pl-8 md:border-l">
+      <div className="flex flex-row items-center justify-between md:justify-end gap-4 sm:gap-10 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-primary/20 md:border-0 pl-0 md:pl-8 md:border-l">
         <div className="flex flex-col items-start md:items-end">
-          <span className="font-mono-technical text-[10px] opacity-60 mb-2 tracking-widest text-[#666]">AI CONFIDENCE</span>
-          <span className="font-mono-technical text-3xl font-black tracking-tight">{ai_confidence}%</span>
+          <span className="font-mono-technical text-[10px] opacity-60 mb-1 tracking-widest text-[#666]">AI CONFIDENCE</span>
+          <span className="font-mono-technical text-2xl md:text-3xl font-black tracking-tight">{ai_confidence}%</span>
         </div>
         
-        <div className="flex flex-col items-start md:items-end border-l border-primary/10 pl-10">
-           <span className="font-mono-technical text-[10px] opacity-60 mb-2 tracking-widest text-[#666]">PRIORITY</span>
+        <div className="flex flex-col items-start md:items-end border-l border-primary/10 pl-4 sm:pl-10">
+           <span className="font-mono-technical text-[10px] opacity-60 mb-1 tracking-widest text-[#666]">PRIORITY</span>
            <span 
              className={`font-mono-technical text-sm font-bold px-4 py-2 border`}
              style={{

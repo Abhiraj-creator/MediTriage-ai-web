@@ -7,11 +7,15 @@ import { feedbackService } from '../services/feedback.service'
 import { RISK_LEVELS } from '../../../config/constants'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { SendInstructionsPanel } from '../components/SendInstructionsPanel'
-import { DoctorActionPanel } from '../components/DoctorActionPanel'
-import { motion } from 'framer-motion'
-import { useAuthStore } from '../../../store/auth.store'
 import { generateCaseReportPdf } from '../../../utils/pdf.generator'
 import { pulseHighRiskCard } from '../../../animations/gsap.timelines'
+
+// New advanced dashboard components
+import { RiskBreakdownPanel } from '../../dashboard/components/RiskBreakdownPanel'
+import { TimelinePanel } from '../../dashboard/components/TimelinePanel'
+import { MedicineAnalysisPanel } from '../../dashboard/components/MedicineAnalysisPanel'
+import { ConfidencePanel } from '../../dashboard/components/ConfidencePanel'
+import { DoctorActionPanel } from '../components/DoctorActionPanel'
 
 // Derives smart differentials from case data for demo purposes
 // In production this comes from the AI edge function response
@@ -79,6 +83,7 @@ export const CaseDetailPage = () => {
   const [isDownloading, setIsDownloading] = useState(false)
   const [clinicalNote, setClinicalNote] = useState('')
   const [noteSaved, setNoteSaved] = useState(false)
+  const [activeActionTab, setActiveActionTab] = useState(null)
 
   const aiCardRef = useRef(null)
 
@@ -214,40 +219,39 @@ export const CaseDetailPage = () => {
           >
             <ArrowLeft size={16} /> BACK TO QUEUE
           </button>
-          <div className="font-mono-technical text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5">
+          <div className="font-mono-technical text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5 truncate max-w-[120px] sm:max-w-none">
             {caseItem?.patient_name ? caseItem.patient_name : `SYS REG: ${caseItem.id}`}
           </div>
         </div>
-        <div className="flex items-center gap-4 hidden sm:flex">
+        <div className="flex items-center gap-2 sm:gap-4 mt-2 sm:mt-0 flex-wrap justify-end">
           <button 
              onClick={handleDownloadReport} 
              disabled={isDownloading}
-             className="flex items-center gap-2 px-4 py-2 border border-primary text-primary font-mono-technical text-xs font-bold hover:bg-primary/5 transition-colors disabled:opacity-50"
+             className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-primary text-primary font-mono-technical text-[10px] sm:text-xs font-bold hover:bg-primary/5 transition-colors disabled:opacity-50"
           >
-            <Download size={14} /> {isDownloading ? 'GENERATING...' : 'DOWNLOAD REPORT'}
+            <Download size={12} className="sm:w-[14px]" /> <span className="hidden xs:inline">{isDownloading ? 'GEN...' : 'REPORT'}</span>
           </button>
-          {caseItem.status === 'pending' || caseItem.status === 'reviewed' ? (
-            <>
+          
+          {(caseItem.status === 'pending' || caseItem.status === 'reviewed') && (
+            <div className="flex gap-2">
               <button 
                  onClick={() => {
+                   setActiveActionTab('approve')
                    document.getElementById('doctor-action-panel')?.scrollIntoView({ behavior: 'smooth' })
                  }}
-                 className="px-4 py-2 bg-[#16A34A] text-white font-mono-technical text-xs font-bold shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
+                 className="px-3 sm:px-4 py-2 bg-[#16A34A] text-white font-mono-technical text-[10px] sm:text-xs font-bold shadow-[2px_2px_0px_#1A1AFF] sm:shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
               >
-                APPROVE TRIAGE
+                APPROVE
               </button>
               <button 
                  onClick={() => {
+                   setActiveActionTab('appointment')
                    document.getElementById('doctor-action-panel')?.scrollIntoView({ behavior: 'smooth' })
                  }}
-                 className="px-4 py-2 bg-primary text-on-primary font-mono-technical text-xs font-bold shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
+                 className="px-3 sm:px-4 py-2 bg-primary text-on-primary font-mono-technical text-[10px] sm:text-xs font-bold shadow-[2px_2px_0px_#1A1AFF] sm:shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
               >
-                BOOK APPOINTMENT
+                BOOK
               </button>
-            </>
-          ) : (
-            <div className="px-4 py-2 bg-surface-container border border-primary text-primary font-mono-technical text-xs font-bold uppercase">
-              STATUS: {caseItem.status}
             </div>
           )}
         </div>
@@ -284,37 +288,11 @@ export const CaseDetailPage = () => {
             </div>
           </div>
 
-          {/* Visit History Panel */}
-          <div className="border border-primary bg-surface-container p-4 flex flex-col gap-2">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-mono-technical text-xs font-bold uppercase">VISIT HISTORY</h3>
-              <span className="font-mono-technical text-[10px] opacity-50">LONGITUDINAL VIEW</span>
-            </div>
-            {visitHistory.map((visit, idx) => (
-              <div key={idx} className="flex items-start gap-3 py-2 border-b border-primary/10 last:border-0">
-                <div className={`w-2 h-2 mt-1.5 flex-shrink-0 rounded-full ${
-                  visit.risk === 'HIGH' ? 'bg-[#DC2626]' :
-                  visit.risk === 'MEDIUM' ? 'bg-[#D97706]' : 'bg-[#16A34A]'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center">
-                    <span className="font-mono-technical text-[10px] font-bold">{visit.date}</span>
-                    <span className={`font-mono-technical text-[9px] px-1.5 py-0.5 border ${
-                      visit.risk === 'HIGH' ? 'text-[#DC2626] border-[#DC2626]' :
-                      visit.risk === 'MEDIUM' ? 'text-[#D97706] border-[#D97706]' :
-                      'text-[#16A34A] border-[#16A34A]'
-                    }`}>{visit.risk}</span>
-                  </div>
-                  <p className="text-xs opacity-70 mt-0.5 truncate">{visit.complaint}</p>
-                  <p className="font-mono-technical text-[9px] opacity-50 mt-0.5">{visit.outcome}</p>
-                </div>
-              </div>
-            ))}
-            <div className="font-mono-technical text-[10px] text-[#D97706] mt-1 flex items-center gap-1">
-              <span>⚠</span>
-              <span>REPEAT VISITS DETECTED — CONSIDER SYSTEMIC INVESTIGATION</span>
-            </div>
-          </div>
+          {/* Advanced Timeline Panel */}
+          <TimelinePanel caseItem={caseItem} />
+
+          {/* Medicine Analysis Panel */}
+          <MedicineAnalysisPanel caseItem={caseItem} />
 
           {/* Symptom Transcript & Clinical Notes */}
           <div className="border border-primary bg-surface shadow-[4px_4px_0px_#1A1AFF] flex flex-col flex-1 min-h-[400px]">
@@ -390,32 +368,12 @@ export const CaseDetailPage = () => {
         {/* RIGHT PANEL : 40% : AI Insight & Feedback */}
         <div className="md:w-2/5 flex flex-col gap-6 pt-1 px-1">
           
-          {/* AI Analysis Card */}
+          {/* Advanced Risk Breakdown */}
+          <RiskBreakdownPanel caseItem={caseItem} />
+
+          {/* AI Analysis & Summary */}
           <div ref={aiCardRef} className="border border-primary bg-surface shadow-[4px_4px_0px_#1A1AFF] p-6 flex flex-col gap-6">
-            
-            <div className="flex justify-between items-start border-b border-primary/20 pb-6">
-              <div>
-                 <span className="block font-mono-technical text-[10px] uppercase font-bold text-primary/60 mb-2">AI CONFIDENCE METRIC</span>
-                 <div className="text-5xl font-mono font-black text-primary leading-none tracking-tighter">
-                   {caseItem.ai_confidence}<span className="text-2xl">%</span>
-                 </div>
-                 <div className="w-full h-1 bg-surface-container mt-3 border border-primary">
-                    <motion.div 
-                      className="h-full bg-primary"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${caseItem.ai_confidence}%` }}
-                      transition={{ duration: 1.5, ease: 'easeOut' }}
-                    />
-                 </div>
-              </div>
-              <div className={`px-4 py-2 border font-mono-technical text-sm font-bold tracking-wider uppercase ${
-                  caseItem.risk_level === 'HIGH' ? 'bg-[#FEF2F2] text-[#DC2626] border-[#DC2626]' :
-                  caseItem.risk_level === 'MEDIUM' ? 'bg-[#FFFBEB] text-[#D97706] border-[#D97706]' :
-                  'bg-[#F0FDF4] text-[#16A34A] border-[#16A34A]'
-              }`}>
-                {caseItem.risk_level} RISK
-              </div>
-            </div>
+            <ConfidencePanel caseItem={caseItem} />
 
             <div className="border border-primary bg-surface-container p-4">
               <h3 className="font-mono-technical text-xs font-bold uppercase mb-2">AI SYNTHESIS</h3>
@@ -493,6 +451,7 @@ export const CaseDetailPage = () => {
               <DoctorActionPanel
                 caseItem={caseItem}
                 doctorProfile={doctorProfile}
+                initialPanel={activeActionTab}
                 onCaseUpdate={(updated) => {
                   setCaseItem(updated)
                   updateCase(updated)
