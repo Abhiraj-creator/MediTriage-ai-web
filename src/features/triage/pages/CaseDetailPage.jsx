@@ -9,6 +9,7 @@ import { FeedbackForm } from '../components/FeedbackForm'
 import { SendInstructionsPanel } from '../components/SendInstructionsPanel'
 import { generateCaseReportPdf } from '../../../utils/pdf.generator'
 import { pulseHighRiskCard } from '../../../animations/gsap.timelines'
+import { useAuthStore } from '../../../store/auth.store'
 
 // New advanced dashboard components
 import { RiskBreakdownPanel } from '../../dashboard/components/RiskBreakdownPanel'
@@ -16,6 +17,7 @@ import { TimelinePanel } from '../../dashboard/components/TimelinePanel'
 import { MedicineAnalysisPanel } from '../../dashboard/components/MedicineAnalysisPanel'
 import { ConfidencePanel } from '../../dashboard/components/ConfidencePanel'
 import { DoctorActionPanel } from '../components/DoctorActionPanel'
+import { motion } from 'framer-motion'
 
 // Derives smart differentials from case data for demo purposes
 // In production this comes from the AI edge function response
@@ -251,6 +253,15 @@ export const CaseDetailPage = () => {
                  className="px-3 sm:px-4 py-2 bg-primary text-on-primary font-mono-technical text-[10px] sm:text-xs font-bold shadow-[2px_2px_0px_#1A1AFF] sm:shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
               >
                 BOOK
+              </button>
+              <button 
+                 onClick={() => {
+                   setActiveActionTab('reject')
+                   document.getElementById('doctor-action-panel')?.scrollIntoView({ behavior: 'smooth' })
+                 }}
+                 className="px-3 sm:px-4 py-2 bg-[#DC2626] text-white font-mono-technical text-[10px] sm:text-xs font-bold shadow-[2px_2px_0px_#1A1AFF] sm:shadow-[4px_4px_0px_#1A1AFF] hover:translate-y-px hover:shadow-none transition-all"
+              >
+                REJECT AI
               </button>
             </div>
           )}

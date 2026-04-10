@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Save, ShieldAlert, User, Bell, Key } from 'lucide-react'
 import { useAuth } from '../../auth/hooks/useAuth.js'
+import { authService } from '../../auth/services/auth.service.js'
+import { supabase } from '../../../config/supabase'
 
 export const ProfilePage = () => {
   const { user, doctorProfile } = useAuth()
@@ -35,19 +37,42 @@ export const ProfilePage = () => {
     if (!user?.id) return
     
     setIsSaving(true)
-    const result = await authService.updateProfile(user.id, {
-      full_name: formData.name,
-      specialization: formData.specialization,
-      hospital_name: formData.hospital,
-      city: formData.city
-    })
+    
+    if (activeTab === 'profile') {
+      const result = await authService.updateProfile(user.id, {
+        full_name: formData.name,
+        specialization: formData.specialization,
+        hospital_name: formData.hospital,
+        city: formData.city
+      })
 
-    setIsSaving(false)
-    if (result.success) {
+      if (result.success) {
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 3000)
+      } else {
+        alert("Failed to save profile: " + (result.error?.message || "Unknown error"))
+      }
+    } else if (activeTab === 'notifications') {
+      // Mock saving notifications preferences
+      localStorage.setItem('medtriage_alerts', JSON.stringify({
+         notificationsEnabled: formData.notificationsEnabled,
+         highRiskAlerts: formData.highRiskAlerts
+      }))
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
-    } else {
-      alert("Failed to save profile: " + (result.error?.message || "Unknown error"))
+    }
+
+    setIsSaving(false)
+  }
+
+  const handlePasswordReset = async () => {
+    if (!formData.email || formData.email === 'N/A') return
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email)
+      if (error) throw error
+      alert("Password reset link sent to your email addressed.")
+    } catch (err) {
+      alert("Failed to send reset link: " + err.message)
     }
   }
 
@@ -168,10 +193,18 @@ export const ProfilePage = () => {
                    <input type="checkbox" name="highRiskAlerts" checked={formData.highRiskAlerts} onChange={handleChange} className="w-5 h-5 accent-[#DC2626]" />
                  </div>
 
-                 <div className="pt-6 border-t border-primary/20 flex justify-end">
-                  <button type="submit" disabled={isSaving} className="border border-primary bg-primary text-on-primary px-8 py-3 font-mono-technical text-sm font-bold uppercase transition-transform hover:-translate-y-1 hover:shadow-brutal">
-                    {isSaving ? 'UPDATING...' : 'SAVE SETTINGS'}
-                  </button>
+                 <div className="pt-6 border-t border-primary/20 flex flex-col gap-3">
+                  {saveSuccess && (
+                    <div className="border border-green-500 bg-green-50 text-green-700 p-3 font-mono-technical text-xs flex items-center gap-2">
+                       <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                       PREFERENCES UPDATED SUCCESSFULLY
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <button type="submit" disabled={isSaving} className="border border-primary bg-primary text-on-primary px-8 py-3 font-mono-technical text-sm font-bold uppercase transition-transform hover:-translate-y-1 hover:shadow-brutal flex items-center gap-2">
+                      {isSaving ? 'UPDATING...' : <><Save size={16} className="inline mr-2" /> SAVE SETTINGS</>}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -182,7 +215,10 @@ export const ProfilePage = () => {
                <Key size={48} className="mb-4 opacity-40 mx-auto" />
                <h3 className="text-xl font-black uppercase tracking-tighter mb-2">Change Password</h3>
                <p className="font-mono-technical text-xs opacity-60 mb-6 max-w-sm">Secure authorization requires re-authentication to modify credentials.</p>
-               <button className="border border-primary px-6 py-2 font-mono-technical text-sm font-bold uppercase hover:bg-surface-container">
+               <button 
+                 onClick={handlePasswordReset}
+                 className="border border-primary px-6 py-2 font-mono-technical text-sm font-bold uppercase hover:bg-surface-container"
+               >
                  Request Reset Link
                </button>
             </div>

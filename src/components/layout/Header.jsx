@@ -6,26 +6,31 @@ import { useAuth } from '../../features/auth/hooks/useAuth.js'
 
 export const LiveDot = ({ count = 0, isLive = true }) => {
   return (
-    <div className="flex items-center gap-3 border border-primary px-3 py-1 bg-surface-container">
-      <div className="relative flex h-3 w-3">
+    <div className="flex items-center gap-2 sm:gap-3 border border-primary px-2 sm:px-3 py-1 bg-surface-container shrink-0">
+      <div className="relative flex w-2 h-2 sm:h-3 sm:w-3">
         {isLive && (
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
         )}
-        <span className={`relative inline-flex rounded-full h-3 w-3 ${isLive ? 'bg-green-600' : 'bg-red-600'}`}></span>
+        <span className={`relative inline-flex rounded-full w-2 h-2 sm:h-3 sm:w-3 ${isLive ? 'bg-green-600' : 'bg-red-600'}`}></span>
       </div>
-      <span className="font-mono-technical text-xs font-bold">
+      <span className="font-mono-technical text-[10px] sm:text-xs font-bold hidden sm:inline-block">
         {isLive ? 'SYSTEM LIVE' : 'OFFLINE'}
       </span>
+      <span className="font-mono-technical text-[10px] font-bold sm:hidden">
+        {isLive ? 'LIVE' : 'OFF'}
+      </span>
       {count > 0 && (
-        <span className="ml-2 bg-[#DC2626] text-white px-2 py-0.5 text-[10px] font-mono-technical font-bold">
-          {count} PENDING
+        <span className="sm:ml-2 bg-[#DC2626] text-white px-1 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-mono-technical font-bold">
+          {count} <span className="hidden sm:inline">PENDING</span>
         </span>
       )}
     </div>
   )
 }
 
-export const Header = () => {
+import { Menu } from 'lucide-react'
+
+export const Header = ({ onMenuClick }) => {
   const { cases, connectionStatus } = useTriageStore()
   const { user, doctorProfile, signOut } = useAuth()
   const navigate = useNavigate()
@@ -81,12 +86,20 @@ export const Header = () => {
   }
 
   return (
-    <header className="h-16 fixed top-0 left-64 right-0 bg-surface border-b border-primary flex items-center justify-between px-8 z-30">
-      <h1 className="text-2xl font-black uppercase tracking-tighter">
-        {title}
-      </h1>
+    <header className="h-16 fixed top-0 left-0 md:left-64 right-0 bg-surface border-b border-primary flex items-center justify-between px-4 sm:px-8 z-30">
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden border border-primary w-8 h-8 flex items-center justify-center bg-surface hover:bg-surface-container"
+        >
+          <Menu size={16} />
+        </button>
+        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter truncate max-w-[150px] sm:max-w-none">
+          {title}
+        </h1>
+      </div>
       
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 sm:gap-6">
         <LiveDot count={pendingCount} isLive={isLive} />
         
         {/* Notification Bell */}

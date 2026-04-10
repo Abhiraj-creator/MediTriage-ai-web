@@ -53,11 +53,11 @@ export const useTriageStore = create((set, get) => ({
     })
 
     // ALL = only active (pending) cases so the queue stays clean
-    if (activeFilter === 'ALL') return sorted.filter(c => c.status === 'pending')
-    if (activeFilter === 'REVIEWED') return sorted.filter(c => c.status === 'reviewed' || c.status === 'resolved' || c.status === 'admitted')
-    if (activeFilter === 'HIGH RISK') return sorted.filter(c => c.risk_level === 'HIGH' && c.status === 'pending')
-    if (activeFilter === 'MODERATE') return sorted.filter(c => c.risk_level === 'MEDIUM' && c.status === 'pending')
-    if (activeFilter === 'LOW RISK') return sorted.filter(c => c.risk_level === 'LOW' && c.status === 'pending')
+    if (activeFilter === 'ALL') return sorted.filter(c => !c.status || c.status === 'pending')
+    if (activeFilter === 'REVIEWED') return sorted.filter(c => ['closed', 'rejected', 'escalated', 'reviewed', 'resolved', 'admitted'].includes(c.status))
+    if (activeFilter === 'HIGH RISK') return sorted.filter(c => c.risk_level === 'HIGH' && (!c.status || c.status === 'pending'))
+    if (activeFilter === 'MODERATE') return sorted.filter(c => c.risk_level === 'MEDIUM' && (!c.status || c.status === 'pending'))
+    if (activeFilter === 'LOW RISK') return sorted.filter(c => c.risk_level === 'LOW' && (!c.status || c.status === 'pending'))
 
     return sorted
   }

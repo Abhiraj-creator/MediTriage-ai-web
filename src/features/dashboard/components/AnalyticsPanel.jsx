@@ -5,9 +5,13 @@ import { Users, ShieldAlert, Clock, TrendingUp, BarChart3 } from 'lucide-react'
 // AnalyticsPanel displays global stats for the doctor's throughput and impact.
 export const AnalyticsPanel = ({ cases = [] }) => {
   const stats = useMemo(() => {
-    const total = cases.length
-    const highRisk = cases.filter(c => c.risk_level === 'HIGH' && (c.status === 'pending' || !c.status)).length
-    const reviewed = cases.filter(c => c.status && c.status !== 'pending').length
+    const pendingCases = cases.filter(c => !c.status || c.status === 'pending')
+    const total = pendingCases.length
+    const highRisk = pendingCases.filter(c => c.risk_level === 'HIGH').length
+    const moderateRisk = pendingCases.filter(c => c.risk_level === 'MEDIUM').length
+    const lowRisk = pendingCases.filter(c => c.risk_level === 'LOW').length
+    
+    const reviewed = cases.filter(c => c.status === 'closed' || c.status === 'rejected' || c.status === 'escalated').length
     
     // Time saved calculation: 2 mins per case reviewed
     const timeSavedMins = reviewed * 2
@@ -16,7 +20,7 @@ export const AnalyticsPanel = ({ cases = [] }) => {
     
     const timeSavedStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
 
-    return { total, highRisk, reviewed, timeSavedStr, timeSavedMins }
+    return { total, highRisk, moderateRisk, lowRisk, reviewed, timeSavedStr, timeSavedMins }
   }, [cases])
 
   const StatItem = ({ label, value, icon: Icon, color = 'primary' }) => (
@@ -31,7 +35,7 @@ export const AnalyticsPanel = ({ cases = [] }) => {
   )
 
   return (
-    <div className="border-2 border-primary bg-surface shadow-[8px_8px_0px_#1A1AFF] p-8">
+    <div className="border border-primary bg-surface shadow-[4px_4px_0px_#1A1AFF] md:border-2 md:shadow-[8px_8px_0px_#1A1AFF] p-4 md:p-8">
       <div className="flex justify-between items-center mb-8 border-b border-primary/20 pb-4">
         <div>
           <span className="font-mono-technical text-[10px] uppercase font-bold opacity-60 block tracking-widest">CLINICAL PERFORMANCE HUB</span>
@@ -85,8 +89,8 @@ export const AnalyticsPanel = ({ cases = [] }) => {
             <div className="space-y-3">
                {[
                  { label: 'HIGH RISK', val: stats.highRisk, color: '#DC2626' },
-                 { label: 'MODERATE', val: Math.round(stats.total * 0.3), color: '#D97706' },
-                 { label: 'LOW RISK', val: Math.round(stats.total * 0.5), color: '#16A34A' }
+                 { label: 'MODERATE', val: stats.moderateRisk, color: '#D97706' },
+                 { label: 'LOW RISK', val: stats.lowRisk, color: '#16A34A' }
                ].map((item, idx) => (
                  <div key={idx} className="flex flex-col gap-1">
                     <div className="flex justify-between font-mono-technical text-[9px] uppercase font-bold">
@@ -107,12 +111,12 @@ export const AnalyticsPanel = ({ cases = [] }) => {
          </div>
       </div>
 
-      <div className="mt-8 flex items-center gap-3 bg-primary text-on-primary p-4 shadow-[4px_4px_0px_#1A1AFF]">
+      <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-primary text-on-primary p-4 shadow-[4px_4px_0px_#1A1AFF]">
          <div className="w-10 h-10 shrink-0 border border-on-primary/20 flex items-center justify-center font-black text-xl">
             {Math.floor(stats.timeSavedMins / 30)}
          </div>
-         <p className="font-mono-technical text-[10px] uppercase font-bold leading-tight tracking-wider">
-            AI-ASSISTED TRIAGE HAS INCREASED UNIT PRODUCTIVITY BY BY {Math.round((stats.timeSavedMins / 480) * 100)}% IN THIS SESSION ALONE.
+         <p className="font-mono-technical text-[10px] md:text-xs uppercase font-bold leading-relaxed tracking-wider">
+            AI-ASSISTED TRIAGE HAS INCREASED UNIT PRODUCTIVITY BY {Math.round((stats.timeSavedMins / 480) * 100)}% IN THIS SESSION ALONE.
          </p>
       </div>
     </div>

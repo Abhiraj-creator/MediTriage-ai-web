@@ -72,5 +72,24 @@ ${appointmentNotes ? `• Notes: ${appointmentNotes}` : ''}
 _For queries, contact the hospital directly. In emergency, call 112._`
 
     return this.buildWaLink(patientPhone, message)
+  },
+
+  // Send triage rejection/override report to patient
+  sendRejectionReport({ patientPhone, patientName, doctorName, doctorSpecialization, doctorNote, caseId }) {
+    const message = `🏥 *MediTriage AI — Doctor Override Report*
+
+Hello ${patientName},
+
+The preliminary AI triage report has been *REJECTED / OVERRIDDEN* by *Dr. ${doctorName}* (${doctorSpecialization}).
+
+❗ *Doctor's Assessment & Instructions:*
+${doctorNote}
+
+Please disregard the previous automated recommendations.
+
+🔒 Case ID: ${caseId}
+📱 Track your case on MediTriage AI`
+
+    return this.buildWaLink(patientPhone, message)
   }
 }

@@ -214,19 +214,15 @@ export const LandingPage = () => {
         });
       }
 
-      // Footer Logo Scroll Spin Animation 
-      // Attached to the footer itself so it visually spins a full 360 degrees while the user is actually looking at it
+      // Single Footer Logo Scroll Spin Animation 
       if (footerLogoRef.current) {
         gsap.fromTo(footerLogoRef.current, 
           { 
-            rotation: 90, 
-            scale: 0.1 ,
-            duration:1
+            rotation: 0
           },
           {
-            rotation: 270,
-            scale: window.innerWidth < 768 ? 0.35 : 0.6, // Scale down more on mobile
-            ease: 'power2.in',
+            rotation: 360,
+            ease: 'none',
             scrollTrigger: {
               trigger: "#contact", 
               start: "top bottom", 
@@ -652,16 +648,18 @@ export const LandingPage = () => {
 
       {/* 8. Footer Section */}
       <footer id="contact" className="bg-primary text-surface-container min-h-[600px] md:min-h-[716px] relative flex md:items-center py-20 px-4 md:px-6 section-reveal border-t border-primary overflow-hidden">
-        <div className="absolute left-0 top-[10%] md:top-1/2 md:-translate-y-1/2 pointer-events-none flex items-center z-0 w-[400px] md:w-[450px] lg:w-[750px] h-[400px] md:h-[450px] lg:h-[750px] overflow-visible" style={{ transform: 'translateX(-25%)' }}>
-            <div ref={footerLogoRef} className="origin-center w-full h-full flex items-center justify-center ml-[5vw] md:ml-[8vw] mt-0 md:mt-[-20vh]">
-               <Logo className="w-full h-full opacity-90 mix-blend-overlay" pathClassName="fill-white" />
-            </div>
-        </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 w-full max-w-screen-2xl mx-auto relative z-10 reveal">
             
-            {/* Left Box (Copyright) - Keeps distance from spinning logo */}
-            <div className="md:col-span-4 lg:col-span-5 flex flex-col justify-end pt-[200px] md:pt-0">
+            {/* Left Box (Copyright & Single Logo) */}
+            <div className="md:col-span-4 lg:col-span-5 flex flex-col justify-end pt-12 md:pt-0">
+                <Link 
+                  to={isAuthenticated ? "/dashboard" : "/get-started"}
+                  className="w-16 h-16 md:w-24 md:h-24 mb-8 flex items-center justify-start group"
+                >
+                   <div ref={footerLogoRef} className="w-full h-full origin-center">
+                     <Logo className="w-full h-full opacity-90 transition-opacity group-hover:opacity-100" pathClassName="fill-white" />
+                   </div>
+                </Link>
                 <div className="mb-4">
                     <h5 className="font-mono-technical text-xs">MEDITRIAGE CORE INC.</h5>
                 </div>
@@ -707,7 +705,7 @@ export const LandingPage = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex gap-4 md:gap-6">
+                    <div className="flex items-center gap-4 md:gap-6">
                         <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-4 py-2 hover:bg-white hover:text-primary transition-colors" href="#">LINKEDIN</a>
                         <a className="font-mono-technical text-[10px] md:text-xs border border-white/30 px-4 py-2 hover:bg-white hover:text-primary transition-colors" href="#">GITHUB</a>
                     </div>

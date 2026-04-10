@@ -3,7 +3,7 @@ import { LayoutDashboard, Users, Activity, User, LogOut, Home } from 'lucide-rea
 import { useAuth } from '../../features/auth/hooks/useAuth.js'
 import { Logo } from '../common/Logo'
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut, user, doctorProfile } = useAuth()
@@ -24,11 +24,16 @@ export const Sidebar = () => {
   }
 
   return (
-    <aside className="w-64 fixed left-0 top-0 h-screen bg-surface border-r border-primary flex flex-col z-40 overflow-y-auto">
+    <aside className={`w-64 fixed left-0 top-0 h-screen bg-surface border-r border-primary flex flex-col z-40 overflow-y-auto transform transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Brand */}
-      <div className="h-16 flex items-center px-6 border-b border-primary flex-shrink-0">
-        <Logo className="w-6 h-6 mr-3" pathClassName="fill-primary" />
-        <span className="font-mono-technical text-lg font-bold tracking-tighter">MEDITRIAGE</span>
+      <div className="h-16 flex items-center justify-between px-6 border-b border-primary flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Logo className="w-6 h-6 shrink-0" pathClassName="fill-primary" />
+          <span className="font-mono-technical text-lg font-bold tracking-tighter truncate">MEDITRIAGE</span>
+        </div>
+        <button className="md:hidden opacity-60 hover:opacity-100" onClick={onClose}>
+           ✕
+        </button>
       </div>
 
       {/* Nav Links */}
@@ -40,6 +45,7 @@ export const Sidebar = () => {
             <Link
               key={item.label}
               to={item.path}
+              onClick={onClose}
               className={`
                 group flex items-center gap-3 px-4 py-3 font-mono-technical text-sm transition-all
                 ${isActive ? 'bg-primary text-on-primary shadow-brutal translate-x-1 translate-y-1' : 'text-primary hover:bg-surface-container hover:border hover:border-primary'}
@@ -55,6 +61,7 @@ export const Sidebar = () => {
         <div className="border-t border-primary/20 my-2" />
         <Link
           to="/"
+          onClick={onClose}
           className="group flex items-center gap-3 px-4 py-3 font-mono-technical text-xs text-primary/60 hover:text-primary hover:bg-surface-container hover:border hover:border-primary transition-all"
         >
           <Home size={16} />

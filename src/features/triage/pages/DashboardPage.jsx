@@ -97,10 +97,11 @@ export const DashboardPage = () => {
   // Compute stats from real store data
   const stats = useMemo(() => {
     // We want to count across all cases regardless of status for "TOTAL"
-    const total = cases.length
+    // We now count only pending cases for "TOTAL PATIENTS" as per requirements
+    const total = cases.filter(c => !c.status || c.status === 'pending').length
     const highRisk = cases.filter(c => c.risk_level === 'HIGH' && (c.status === 'pending' || !c.status)).length
-    const reviewed = cases.filter(c => c.status && c.status !== 'pending').length
-    const pending = cases.filter(c => !c.status || c.status === 'pending').length
+    const reviewed = cases.filter(c => c.status === 'closed' || c.status === 'rejected' || c.status === 'escalated').length
+    const pending = total // Total is now pending
     return { total, highRisk, reviewed, pending }
   }, [cases])
 
@@ -144,12 +145,12 @@ export const DashboardPage = () => {
         
         {/* Urgent Case Highlight on the Right Side */}
         {stats.highRisk > 0 && (
-          <div className="mt-6 md:mt-0 flex-1 flex ">
-            <div className="bg-red-50 border-2 border-[#DC2626] p-4 flex items-center gap-4 shadow-[4px_4px_0px_#DC2626] animate-pulse">
-              <ShieldAlert className="text-[#DC2626] w-8 h-8 animate-bounce" />
+          <div className="mt-6 md:mt-0 flex-1 flex md:justify-end">
+            <div className="bg-red-50 border-2 border-[#DC2626] p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-[4px_4px_0px_#DC2626] animate-pulse">
+              <ShieldAlert className="text-[#DC2626] w-8 h-8 animate-bounce shrink-0" />
               <div>
                 <p className="font-mono-technical text-xs text-[#DC2626] font-bold uppercase tracking-wider mb-1">Critical Alert</p>
-                <p className="font-bold text-[#DC2626] uppercase">
+                <p className="font-bold text-[#DC2626] uppercase text-sm sm:text-base">
                   {stats.highRisk} URGENT CASE{stats.highRisk !== 1 ? 'S' : ''} REQUIRING REVIEW
                 </p>
               </div>
